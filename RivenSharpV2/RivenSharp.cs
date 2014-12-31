@@ -82,7 +82,8 @@ namespace RivenSharp
            TargetSelector.AddToMenu(TargetSelectorMenu);
            Config.AddSubMenu(TargetSelectorMenu);
             //Combo
-            Config.AddSubMenu(new Menu("Combo Sharp", "combo"));
+           Config.AddSubMenu(new Menu("Combo Sharp", "combo"));
+           Config.SubMenu("combo").AddItem(new MenuItem("useR", "Use R on combo (Shuld be on)")).SetValue(true);
             Config.SubMenu("combo").AddItem(new MenuItem("forceQE", "Use Q after E")).SetValue(true);
             Config.SubMenu("combo").AddItem(new MenuItem("packets", "Use packet cast")).SetValue(true);
 
@@ -283,61 +284,61 @@ namespace RivenSharp
         {
             try
             {
-                if (args.PacketData[0] == 35 && Riven.Q.IsReady())
-                {
-                    Console.WriteLine("Gott");
-                    GamePacket gp = new GamePacket(args.PacketData);
-                    gp.Position = 2;
-                    int netId = gp.ReadInteger();
-                    if (LXOrbwalker.GetPossibleTarget() == null || LXOrbwalker.GetPossibleTarget().NetworkId != netId)
-                        return;
-                    if(!LXOrbwalker.CanAttack())
-                        Riven.Q.Cast(LXOrbwalker.GetPossibleTarget().Position);
-                }
-
-                if (args.PacketData[0] == 0x17)
-                {
-                    Console.WriteLine("cancel");
-
-                    GamePacket packet = new GamePacket(args.PacketData);
-                    packet.Position = 2;
-                    int sourceId = packet.ReadInteger();
-                    if (sourceId == Riven.Player.NetworkId)
-                    {
-                        Console.WriteLine("cancel wawf");
-                        Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
-                        if (LXOrbwalker.GetPossibleTarget() != null)
-                        {
-                            Riven.moveTo(LXOrbwalker.GetPossibleTarget().Position);
-                            //Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(LXOrbwalker.GetPossibleTarget().Position.X, LXOrbwalker.GetPossibleTarget().Position.Y)).Send();
-
-                            // LXOrbwalker.ResetAutoAttackTimer();
-                            Riven.cancelAnim(true);
-                        }
-                    }
-                }
-
-                if (args.PacketData[0] == 0xDF && false)
-                {
-                    
-                    Console.WriteLine("cancel");
-
-                    GamePacket packet = new GamePacket(args.PacketData);
-                    packet.Position = 2;
-                    int sourceId = packet.ReadInteger();
-                    if (sourceId == Riven.Player.NetworkId)
-                    {
-                        Console.WriteLine("cancel wawf");
-                        Riven.moveTo(Game.CursorPos);
-                        Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
-                        LXOrbwalker.ResetAutoAttackTimer();
-                        Riven.cancelAnim();
-                    }
-                }
+                
 
                 if (isComboing())
                 {
-                   
+                    if (args.PacketData[0] == 35 && Riven.Q.IsReady())
+                    {
+                        Console.WriteLine("Gott");
+                        GamePacket gp = new GamePacket(args.PacketData);
+                        gp.Position = 2;
+                        int netId = gp.ReadInteger();
+                        if (LXOrbwalker.GetPossibleTarget() == null || LXOrbwalker.GetPossibleTarget().NetworkId != netId)
+                            return;
+                        if (!LXOrbwalker.CanAttack())
+                            Riven.Q.Cast(LXOrbwalker.GetPossibleTarget().Position);
+                    }
+
+                    if (args.PacketData[0] == 0x17)
+                    {
+                        Console.WriteLine("cancel");
+
+                        GamePacket packet = new GamePacket(args.PacketData);
+                        packet.Position = 2;
+                        int sourceId = packet.ReadInteger();
+                        if (sourceId == Riven.Player.NetworkId)
+                        {
+                            Console.WriteLine("cancel wawf");
+                            Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
+                            if (LXOrbwalker.GetPossibleTarget() != null)
+                            {
+                                Riven.moveTo(LXOrbwalker.GetPossibleTarget().Position);
+                                //Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(LXOrbwalker.GetPossibleTarget().Position.X, LXOrbwalker.GetPossibleTarget().Position.Y)).Send();
+
+                                // LXOrbwalker.ResetAutoAttackTimer();
+                                Riven.cancelAnim(true);
+                            }
+                        }
+                    }
+
+                    if (args.PacketData[0] == 0xDF && false)
+                    {
+
+                        Console.WriteLine("cancel");
+
+                        GamePacket packet = new GamePacket(args.PacketData);
+                        packet.Position = 2;
+                        int sourceId = packet.ReadInteger();
+                        if (sourceId == Riven.Player.NetworkId)
+                        {
+                            Console.WriteLine("cancel wawf");
+                            Riven.moveTo(Game.CursorPos);
+                            Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
+                            LXOrbwalker.ResetAutoAttackTimer();
+                            Riven.cancelAnim();
+                        }
+                    }
                    
                     if (args.PacketData[0] == 0x61) //move
                     {
@@ -393,7 +394,7 @@ namespace RivenSharp
                         //Game.Say("/l");
                     }
 
-                    if (cast.Slot == SpellSlot.E && Riven.R.IsReady())
+                    if (cast.Slot == SpellSlot.E && Riven.R.IsReady() && Config.Item("useR").GetValue<bool>())
                     {
                         Utility.DelayAction.Add(Game.Ping + 50, delegate { Riven.useRSmart(LXOrbwalker.GetPossibleTarget()); });
                     }

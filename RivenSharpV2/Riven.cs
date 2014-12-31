@@ -80,7 +80,8 @@ namespace RivenSharp
             igniteIfKIllable(target);
             rushDownQ = rushDmgBasedOnDist(target) * 0.7f > target.Health;
             rushDown = rushDmgBasedOnDist(target)*1.1f > target.Health;
-            useRSmart(target);
+            if (RivenSharp.Config.Item("useR").GetValue<bool>())
+                useRSmart(target);
             if (rushDown)
                 sumItems.castIgnite((Obj_AI_Hero)target);
             useESmart(target);
@@ -105,7 +106,7 @@ namespace RivenSharp
             //QLogic
             if (getQJumpCount() > 0)
             {   
-                Player.IssueOrder(GameObjectOrder.AttackUnit, target);
+               // Player.IssueOrder(GameObjectOrder.AttackUnit, target);
 
                 if (!Player.IsChanneling && Q.IsReady() && dist > Player.AttackRange+Player.BoundingRadius/* && (getQJumpCount()*175 + target.BoundingRadius + 100) < dist*/)
                 {
@@ -119,7 +120,7 @@ namespace RivenSharp
                                .Where(tur => tur.IsAlly)
                                .OrderBy(tur => tur.Distance(Player.Position))
                                .First();
-                Player.IssueOrder(GameObjectOrder.MoveTo, closest_tower.ServerPosition);
+                Player.IssueOrder(GameObjectOrder.MoveTo, closest_tower.Position);
                 if (E.IsReady())
                 {
                     E.Cast(closest_tower.Position);
@@ -165,7 +166,7 @@ namespace RivenSharp
 
         public static void gapWithQ(Obj_AI_Base target)
         {
-            if ((E.IsReady() || !Q.IsReady() ) && ! rushDownQ)
+            if ((E.IsReady() || !Q.IsReady()) && ! rushDownQ)
                 return;
             reachWithQ(target);
         }
