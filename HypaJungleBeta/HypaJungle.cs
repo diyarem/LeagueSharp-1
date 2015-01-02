@@ -33,20 +33,17 @@ namespace HypaJungle
         public static Menu Config;
 
         public static Obj_AI_Hero player = ObjectManager.Player;
+        public static bool isChanneling = false;
 
         public static float lastSkip = 0;
 
         public HypaJungle()
         {
-          
-
             CustomEvents.Game.OnGameLoad += onLoad;
-
         }
 
         private static void onLoad(EventArgs args)
         {
-
             Game.PrintChat("HypaJungle by DeTuKs");
             try
             {
@@ -186,6 +183,9 @@ namespace HypaJungle
 
         private static void OnGameUpdate(EventArgs args)
         {
+            if (isChanneling)
+                isChanneling = false;
+
             if (Config.Item("skipSpawn").GetValue<KeyBind>().Active) //fullDMG
             {
                 if (JungleClearer.focusedCamp != null && lastSkip+1<Game.Time)

@@ -67,9 +67,11 @@ namespace HypaJungle
 
             if (!CanMove() || CanAttack())
                 return;
-            if (player.Position.Distance(position)>50)
+            if (player.Position.Distance(position) > 50) {
                 player.IssueOrder(GameObjectOrder.MoveTo, position);
-            return;
+                return;
+            }
+                
             if (holdAreaRadius < 0)
                 holdAreaRadius = 20;
             if (player.ServerPosition.Distance(position) < holdAreaRadius)
@@ -92,7 +94,7 @@ namespace HypaJungle
         public static bool CanMove()
         {
             var extraWindup = 70;
-            if (_lastAATick <= Environment.TickCount && !player.IsChanneling)
+            if (_lastAATick <= Environment.TickCount && !HypaJungle.isChanneling)
                 return Environment.TickCount + Game.Ping / 2 >= _lastAATick + player.AttackCastDelay * 1000 + extraWindup;
             return false;
         }

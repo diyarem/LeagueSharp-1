@@ -116,7 +116,7 @@ namespace HypaJungle
 
         public override void UseW(Obj_AI_Minion minion)
         {
-
+            HypaJungle.isChanneling = true;
         }
 
         public override void UseE(Obj_AI_Minion minion)
@@ -136,8 +136,7 @@ namespace HypaJungle
 
             if (JungleOrbwalker.CanAttack())
             {
-                if(minion.Distance(player)>200)
-                    UseQ(minion);
+                UseQ(minion);
                 UseW(minion);
                 UseE(minion);
                 UseR(minion);
@@ -294,11 +293,7 @@ namespace HypaJungle
                 return false;
             }
 
-            if (startedMedi)
-                return false;
-
-           
-            return true;
+            return !startedMedi;
         }
 
         public override bool canRecall()

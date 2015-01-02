@@ -284,7 +284,7 @@ namespace HypaJungle
 
         public void buyItems()
         {
-            if (inSpwan())
+            if (inSpawn())
             {
                 foreach (var item in nextItem.itemIds)
                 {
@@ -298,7 +298,7 @@ namespace HypaJungle
             checkItems();
         }
 
-        public bool inSpwan()
+        public bool inSpawn()
         {
             Vector3 spawnPos1 = new Vector3(14286f, 14382f, 172f);
             Vector3 spawnPos0 = new Vector3(416f, 468f, 182f);

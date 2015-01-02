@@ -193,13 +193,13 @@ namespace HypaJungle
 
             if (jcState == JungleCleanState.RecallForHeal)
             {
-                if (jungler.recall.IsReady() && !player.IsChanneling && !jungler.inSpwan() && !recalCasted)
+                if (jungler.recall.IsReady() && !HypaJungle.isChanneling && !jungler.inSpawn() && !recalCasted)
                 {
                     jungler.recall.Cast();
                     recalCasted = true;
                 }
 
-                if (jungler.inSpwan())
+                if (jungler.inSpawn())
                 {
                     if (HypaJungle.Config.Item("autoBuy").GetValue<bool>())
                     {
@@ -207,7 +207,7 @@ namespace HypaJungle
                     }
                     else
                     {
-                        if (jungler.inSpwan() && player.Health > player.MaxHealth*0.7f &&
+                        if (jungler.inSpawn() && player.Health > player.MaxHealth*0.7f &&
                             (!jungler.gotMana || player.Mana > player.MaxMana*0.7f))
                         {
                             jcState = JungleCleanState.SearchingBestCamp;
@@ -227,13 +227,13 @@ namespace HypaJungle
                     Console.WriteLine("SearchingBestCamp");
                 }
 
-                if (jungler.inSpwan())
+                if (jungler.inSpawn())
                 {
                     jungler.getItemPassiveBoostDps();
                     jungler.setupSmite();
                 }
 
-                if (jungler.inSpwan() && player.IsChanneling)
+                if (jungler.inSpawn() && HypaJungle.isChanneling)
                 {
                     Vector3 stopRecPos = new Vector3(6, 30, 2);
                     player.IssueOrder(GameObjectOrder.MoveTo, player.Position + stopRecPos);
@@ -241,7 +241,7 @@ namespace HypaJungle
 
                 if (jungler.nextItem != null && player.GoldCurrent-12 >= jungler.nextItem.goldReach)
                 {
-                    if (jungler.recall.IsReady() && !player.IsChanneling && !jungler.inSpwan() && !recalCasted)
+                    if (jungler.recall.IsReady() && !HypaJungle.isChanneling && !jungler.inSpawn() && !recalCasted)
                     {
                         jungler.recall.Cast();
                         recalCasted = true;
@@ -249,13 +249,13 @@ namespace HypaJungle
                 }
                 else
                 {
-                    if (jungler.inSpwan() && player.Health > player.MaxHealth*0.8f &&
+                    if (jungler.inSpawn() && player.Health > player.MaxHealth*0.8f &&
                         (!jungler.gotMana || player.Mana > player.MaxMana * 0.8f) && (jungler.nextItem == null || player.GoldCurrent+40 <= jungler.nextItem.goldReach))
                     {
                         jcState = JungleCleanState.SearchingBestCamp;
                         Console.WriteLine("SearchingBestCamp");
                     }
-                    if (!player.IsChanneling && !jungler.inSpwan())
+                    if (!HypaJungle.isChanneling && !jungler.inSpawn())
                     {
                         jcState = JungleCleanState.SearchingBestCamp;
                         Console.WriteLine("SearchingBestCamp");
@@ -268,7 +268,7 @@ namespace HypaJungle
                 recalCasted = false;
             }
 
-            if (jcState == JungleCleanState.GoingToShop && jungler.inSpwan())
+            if (jcState == JungleCleanState.GoingToShop && jungler.inSpawn())
             {
                 if (jungler.nextItem != null && player.GoldCurrent >= jungler.nextItem.goldReach )
                     jungler.buyItems();
@@ -287,7 +287,7 @@ namespace HypaJungle
 
         public static bool canLeaveBase()
         {
-            if (jungler.inSpwan() && player.Health > player.MaxHealth*0.7f &&
+            if (jungler.inSpawn() && player.Health > player.MaxHealth*0.7f &&
                 (!jungler.gotMana || player.Mana > player.MaxMana*0.7f))
             {
                 if (jungler.nextItem.goldReach - player.GoldCurrent > 16)
