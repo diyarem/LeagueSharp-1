@@ -28,9 +28,7 @@ namespace ToasterLoading
     {
         private const int WM_KEYUP = 0x101;
         private const int Disable = 0x20; // Space
-
         private const int SecondsToWait = 250;
-
         private readonly MemoryStream _packet;
         private bool _escaped;
         private Timer _timer;
@@ -38,21 +36,23 @@ namespace ToasterLoading
         public ToasterLoading()
         {
             _packet = new MemoryStream();
-            Game.OnGameSendPacket += OnGameSendPacket;
-            Game.OnWndProc += OnWndProc;
-            Drawing.OnDraw += OnDraw;
+            Game.OnGameSendPacket += Game_OnGameSendPacket;
+            Game.OnWndProc += Game_OnWndProc;
+            Drawing.OnDraw += Drawing_OnDraw;
         }
 
-        private void OnWndProc(WndEventArgs args)
+        private void Game_OnWndProc(WndEventArgs args)
         {
             try
             {
-                if (args.Msg == WM_KEYUP && args.WParam == Disable)
+                if (args.Msg != WM_KEYUP || args.WParam != Disable)
                 {
-                    _escaped = true;
-                    Game.SendPacket(_packet.ToArray(), PacketChannel.C2S, PacketProtocolFlags.Reliable);
-                    _packet.Close();
+                    return;
                 }
+
+                _escaped = true;
+                Game.SendPacket(_packet.ToArray(), PacketChannel.C2S, PacketProtocolFlags.Reliable);
+                _packet.Close();
             }
             catch (Exception ex)
             {
@@ -60,12 +60,14 @@ namespace ToasterLoading
             }
         }
 
-        private void OnDraw(EventArgs args)
+        private void Drawing_OnDraw(EventArgs args)
         {
             try
             {
                 if (_escaped)
+                {
                     return;
+                }
 
                 Drawing.DrawText(10, 10, Color.Green, Assembly.GetExecutingAssembly().GetName().Name);
             }
@@ -76,18 +78,20 @@ namespace ToasterLoading
             }
         }
 
-        private void OnGameSendPacket(GamePacketEventArgs args)
+        private void Game_OnGameSendPacket(GamePacketEventArgs args)
         {
             try
             {
-                if (args.PacketData[0] == 190 && !_escaped)
+                if (args.PacketData[0] != 190 || _escaped)
                 {
-                    args.Process = false;
-                    _packet.Write(args.PacketData, 0, args.PacketData.Length);
-                    _timer = new Timer(SecondsToWait*1000);
-                    _timer.Elapsed += OnTimedEvent;
-                    _timer.Start();
+                    return;
                 }
+
+                args.Process = false;
+                _packet.Write(args.PacketData, 0, args.PacketData.Length);
+                _timer = new Timer(SecondsToWait*1000);
+                _timer.Elapsed += OnTimedEvent;
+                _timer.Start();
             }
             catch (Exception ex)
             {

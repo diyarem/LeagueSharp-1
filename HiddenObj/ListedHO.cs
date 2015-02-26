@@ -1,25 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SharpDX;
+﻿using SharpDX;
+using Color = System.Drawing.Color;
 
 namespace HiddenObj
 {
-    class ListedHO
+    internal class ListedHO
     {
-        public int NetworkId;
-        public string Name;
-        public int Duration;
-        public System.Drawing.Color ObjColor;
-        public int Range;
-        public Vector3 Position;
         public float CreatedAt;
+        public int Duration;
+        public string Name;
+        public int NetworkId;
+        public Color ObjColor;
+        public Vector3 Position;
+        public int Range;
 
-        public ListedHO(int NetID, string name, int duration, System.Drawing.Color objColor, int range, Vector3 position, float createdAt)
+        public ListedHO(int netId, string name, int duration, Color objColor, int range, Vector3 position,
+            float createdAt)
         {
-            NetworkId = NetID;
+            NetworkId = netId;
             Name = name;
             Duration = duration;
             ObjColor = objColor;

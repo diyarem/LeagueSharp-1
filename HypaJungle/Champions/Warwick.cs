@@ -1,105 +1,107 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using LeagueSharp;
 using LeagueSharp.Common;
 
-namespace HypaJungle
+namespace HypaJungle.Champions
 {
-    class Warwick : Jungler
+    internal class Warwick : Jungler
     {
         public Warwick()
         {
-            setUpSpells();
-            setUpItems();
-            levelUpSeq = new Spell[] { W,Q,W,E,W,R,W,Q,W,Q,R,Q,Q,E,E,R,E,E};
+            SetUpSpells();
+            SetUpItems();
+            LevelUpSeq = new[] {W, Q, W, E, W, R, W, Q, W, Q, R, Q, Q, E, E, R, E, E};
         }
 
-        public override void setUpSpells()
+        public override sealed void SetUpSpells()
         {
-            recall = new Spell(SpellSlot.Recall);
+            Recall = new Spell(SpellSlot.Recall);
             Q = new Spell(SpellSlot.Q, 400);
             W = new Spell(SpellSlot.W, 1250);
             E = new Spell(SpellSlot.E, 0);
             R = new Spell(SpellSlot.R, 700);
         }
 
-        public override void setUpItems()
+        public override sealed void SetUpItems()
         {
             #region itemsToBuyList
-            buyThings = new List<ItemToShop>
+
+            BuyThings = new List<ItemToShop>
             {
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 475,
-                    itemsMustHave = new List<int>{},
-                    itemIds = new List<int>{1039,2003,2003,2003}
+                    GoldReach = 475,
+                    ItemsMustHave = new List<int>(),
+                    ItemIds = new List<int> {1039, 2003, 2003, 2003}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 700,
-                    itemsMustHave = new List<int>{1039},
-                    itemIds = new List<int>{3715,1001}
+                    GoldReach = 700,
+                    ItemsMustHave = new List<int> {1039},
+                    ItemIds = new List<int> {3715, 1001}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 900,
-                    itemsMustHave = new List<int>{3715,1001},
-                    itemIds = new List<int>{1042,1042}
+                    GoldReach = 900,
+                    ItemsMustHave = new List<int> {3715, 1001},
+                    ItemIds = new List<int> {1042, 1042}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 700,
-                    itemsMustHave = new List<int>{1042,1042},
-                    itemIds = new List<int>{3718}
+                    GoldReach = 700,
+                    ItemsMustHave = new List<int> {1042, 1042},
+                    ItemIds = new List<int> {3718}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 600,
-                    itemsMustHave = new List<int>{1042,1042,3715},
-                    itemIds = new List<int>{3718}
+                    GoldReach = 600,
+                    ItemsMustHave = new List<int> {1042, 1042, 3715},
+                    ItemIds = new List<int> {3718}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 9999999,
-                    itemsMustHave = new List<int>{3718},
-                    itemIds = new List<int>{}
+                    GoldReach = 9999999,
+                    ItemsMustHave = new List<int> {3718},
+                    ItemIds = new List<int>()
                 }
-          
             };
+
             #endregion
 
-            checkItems();
+            CheckItems();
         }
 
         public override void UseQ(Obj_AI_Minion minion)
         {
-            if(!Q.IsReady())
+            if (!Q.IsReady())
+            {
                 return;
-            float dmg = Q.GetDamage(minion);
-            if ((player.Level <= 7 && (player.MaxHealth - player.Health) > dmg) || player.Level > 7)
+            }
+
+            var dmg = Q.GetDamage(minion);
+            if ((Player.Level <= 7 && (Player.MaxHealth - Player.Health) > dmg) || Player.Level > 7)
+            {
                 Q.Cast(minion);
+            }
         }
 
         public override void UseW(Obj_AI_Minion minion)
         {
-            if (W.IsReady() && minion.Health / getDPS(minion) > 7 && player.Distance(minion)<300)
+            if (W.IsReady() && minion.Health/GetDps(minion) > 7 && Player.Distance(minion) < 300)
+            {
                 W.Cast();
+            }
         }
 
         public override void UseE(Obj_AI_Minion minion)
         {
-
         }
 
         public override void UseR(Obj_AI_Minion minion)
         {
-
         }
 
-        public override void attackMinion(Obj_AI_Minion minion, bool onlyAA)
+        public override void AttackMinion(Obj_AI_Minion minion, bool onlyAa)
         {
             if (JungleOrbwalker.CanAttack())
             {
@@ -107,48 +109,47 @@ namespace HypaJungle
                 UseE(minion);
                 UseR(minion);
             }
-            JungleOrbwalker.attackMinion(minion, minion.Position.To2D().Extend(player.Position.To2D(), 150).To3D());
+            JungleOrbwalker.AttackMinion(minion, minion.Position.To2D().Extend(Player.Position.To2D(), 150).To3D());
         }
 
-        public override void castWhenNear(JungleCamp camp)
+        public override void CastWhenNear(JungleCamp camp)
         {
-
         }
 
-        public override void doAfterAttack(Obj_AI_Base minion)
+        public override void DoAfterAttack(Obj_AI_Base minion)
         {
-            UseQ((Obj_AI_Minion)minion);
-            
+            UseQ((Obj_AI_Minion) minion);
         }
 
-        public override void doWhileRunningIdlin()
+        public override void DoWhileRunningIdlin()
         {
-
         }
 
-        public override float getDPS(Obj_AI_Minion minion)
+        public override float GetDps(Obj_AI_Minion minion)
         {
             float dps = 0;
-            dps += (float)player.GetAutoAttackDamage(minion) * player.AttackSpeedMod;
+            dps += (float) Player.GetAutoAttackDamage(minion)*Player.AttackSpeedMod;
             dps += 30;
-            dpsFix = dps;
+            DpsFix = dps;
+
             return dps;
         }
 
-        public override bool canMove()
+        public override bool CanMove()
         {
             return true;
         }
 
-        public override float canHeal(float inTime,float killtime)
+        public override float CanHeal(float inTime, float killtime)
         {
-            float heal = killtime*player.AttackSpeedMod*(2.5f+0.5f*player.Level)*3;
+            var heal = killtime*Player.AttackSpeedMod*(2.5f + 0.5f*Player.Level)*3;
 
             if (Q.Level != 0)
+            {
                 heal += 25 + 50*Q.Level;
+            }
 
-            return player.HPRegenRate * inTime + heal;
-
+            return Player.HPRegenRate*inTime + heal;
         }
     }
 }

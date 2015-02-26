@@ -1,181 +1,181 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using LeagueSharp;
 using LeagueSharp.Common;
 
-namespace HypaJungle
+namespace HypaJungle.Champions
 {
-    class MasterYi : Jungler
+    internal class MasterYi : Jungler
     {
-
-        public bool startedMedi = false;
+        public bool StartedMedi;
 
         public MasterYi()
         {
-            setUpSpells();
-            setUpItems();
-            levelUpSeq = new Spell[] { Q, W, E, Q, Q, R, Q, E, Q, E, R, E, E, W, W, R, W };
-            buffPriority = 3;
+            SetUpSpells();
+            SetUpItems();
+            LevelUpSeq = new[] {Q, W, E, Q, Q, R, Q, E, Q, E, R, E, E, W, W, R, W};
+            BuffPriority = 3;
         }
 
-        public override void setUpSpells()
+        public override sealed void SetUpSpells()
         {
-            recall = new Spell(SpellSlot.Recall);
+            Recall = new Spell(SpellSlot.Recall);
             Q = new Spell(SpellSlot.Q, 600);
             W = new Spell(SpellSlot.W, 0);
             E = new Spell(SpellSlot.E, 0);
             R = new Spell(SpellSlot.R, 0);
         }
 
-        public override void setUpItems()
+        public override sealed void SetUpItems()
         {
             #region itemsToBuyList
-            buyThings = new List<ItemToShop>
+
+            BuyThings = new List<ItemToShop>
             {
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 475,
-                    itemsMustHave = new List<int>{},
-                    itemIds = new List<int>{1039,2003,2003,3166}
+                    GoldReach = 475,
+                    ItemsMustHave = new List<int>(),
+                    ItemIds = new List<int> {1039, 2003, 2003, 3166}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 350,
-                    itemsMustHave = new List<int>{1039},
-                    itemIds = new List<int>{3715}
+                    GoldReach = 350,
+                    ItemsMustHave = new List<int> {1039},
+                    ItemIds = new List<int> {3715}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 350,
-                    itemsMustHave = new List<int>{3715},
-                    itemIds = new List<int>{1001}
+                    GoldReach = 350,
+                    ItemsMustHave = new List<int> {3715},
+                    ItemIds = new List<int> {1001}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 900,
-                    itemsMustHave = new List<int>{3715,1001},
-                    itemIds = new List<int>{1042,1042}
+                    GoldReach = 900,
+                    ItemsMustHave = new List<int> {3715, 1001},
+                    ItemIds = new List<int> {1042, 1042}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 700,
-                    itemsMustHave = new List<int>{1042,1042},
-                    itemIds = new List<int>{3718}
+                    GoldReach = 700,
+                    ItemsMustHave = new List<int> {1042, 1042},
+                    ItemIds = new List<int> {3718}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 600,
-                    itemsMustHave = new List<int>{1042,1042,3715},
-                    itemIds = new List<int>{3718}
+                    GoldReach = 600,
+                    ItemsMustHave = new List<int> {1042, 1042, 3715},
+                    ItemIds = new List<int> {3718}
                 },
-                new ItemToShop()
+                new ItemToShop
                 {
-                    goldReach = 999999,
-                    itemsMustHave = new List<int>{3718},
-                    itemIds = new List<int>{}
-                },
+                    GoldReach = 999999,
+                    ItemsMustHave = new List<int> {3718},
+                    ItemIds = new List<int>()
+                }
             };
+
             #endregion
 
-            checkItems();
+            CheckItems();
         }
 
         public override void UseQ(Obj_AI_Minion minion)
         {
             if (Q.IsReady() && minion.Health > Q.GetDamage(minion))
+            {
                 Q.Cast(minion);
+            }
         }
 
         public override void UseW(Obj_AI_Minion minion)
         {
-
         }
 
         public override void UseE(Obj_AI_Minion minion)
         {
-            if (E.IsReady() && minion.Health/getDPS(minion)>4)
+            if (E.IsReady() && minion.Health/GetDps(minion) > 4)
+            {
                 E.Cast();
+            }
         }
 
         public override void UseR(Obj_AI_Minion minion)
         {
-
         }
 
-        public override void attackMinion(Obj_AI_Minion minion,bool onlyAA)
+        public override void AttackMinion(Obj_AI_Minion minion, bool onlyAa)
         {
-          //  if (onlyAA)return;
+            //  if (onlyAA)return;
 
             if (JungleOrbwalker.CanAttack())
             {
-                if(minion.Distance(player)>300)
+                if (minion.Distance(Player) > 300)
+                {
                     UseQ(minion);
+                }
+
                 UseW(minion);
                 UseE(minion);
                 UseR(minion);
             }
-            JungleOrbwalker.attackMinion(minion, minion.Position.To2D().Extend(player.Position.To2D(), 100).To3D());
+            JungleOrbwalker.AttackMinion(minion, minion.Position.To2D().Extend(Player.Position.To2D(), 100).To3D());
         }
 
-        public override void castWhenNear(JungleCamp camp)
+        public override void CastWhenNear(JungleCamp camp)
         {
-
         }
 
-        public override void doAfterAttack(Obj_AI_Base minion)
+        public override void DoAfterAttack(Obj_AI_Base minion)
         {
-            if (minion is Obj_AI_Minion)
+            var aiMinion = minion as Obj_AI_Minion;
+            if (aiMinion != null)
             {
-                UseQ((Obj_AI_Minion)minion);
-            }
-
-        }
-
-        public override void doWhileRunningIdlin()
-        {
-            if (W.IsReady() && player.Health < player.MaxHealth*0.7f)
-            {
-                startedMedi = true;
-                W.Cast();
+                UseQ(aiMinion);
             }
         }
 
-        public override float getDPS(Obj_AI_Minion minion)
+        public override void DoWhileRunningIdlin()
+        {
+            if (!W.IsReady() || !(Player.Health < Player.MaxHealth*0.7f))
+            {
+                return;
+            }
+
+            StartedMedi = true;
+            W.Cast();
+        }
+
+        public override float GetDps(Obj_AI_Minion minion)
         {
             float dps = 0;
             dps += Q.GetDamage(minion)*2/Qdata.Cooldown;
-            dps +=(float) player.GetAutoAttackDamage(minion)*1.15f*player.AttackSpeedMod;
-            dpsFix = dps;
+            dps += (float) Player.GetAutoAttackDamage(minion)*1.15f*Player.AttackSpeedMod;
+            DpsFix = dps;
+
             return dps;
         }
 
-        public override bool canMove()
+        public override bool CanMove()
         {
-            if (player.HasBuff("Meditate") && player.Health != player.MaxHealth)
+            if (!Player.HasBuff("Meditate") || Player.Health == Player.MaxHealth)
             {
-                startedMedi = false;
-                return false;
+                return !StartedMedi;
             }
 
-            if (startedMedi)
-                return false;
-
-           
-            return true;
+            StartedMedi = false;
+            return false;
         }
 
-        public override float canHeal(float inTime, float killtime)
+        public override float CanHeal(float inTime, float killtime)
         {
             float heal = 0;
             if (W.IsReady((int) (inTime*1000)))
             {
-                heal =4*( W.Level * 20 + 10 + 0.3f * player.FlatMagicDamageMod);
-
+                heal = 4*(W.Level*20 + 10 + 0.3f*Player.FlatMagicDamageMod);
             }
-            return player.HPRegenRate * inTime + heal;
+
+            return Player.HPRegenRate*inTime + heal;
         }
     }
 }
