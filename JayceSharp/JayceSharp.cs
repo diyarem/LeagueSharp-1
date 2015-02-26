@@ -1,7 +1,10 @@
 ﻿using System;
-
+using System.Threading;
 using LeagueSharp;
 using LeagueSharp.Common;
+using SharpDX;
+using Color = System.Drawing.Color;
+
 /*
  * ToDo:
  * Q doesnt shoot much
@@ -12,59 +15,66 @@ using LeagueSharp.Common;
  * 
  * kOCK ANY ENEMY UNDER TOWER
  * */
-using SharpDX;
-using Color = System.Drawing.Color;
-
 
 namespace JayceSharp
 {
     internal class JayceSharp
     {
         public const string CharName = "Jayce";
-
         public static Menu Config;
 
         public JayceSharp()
         {
             /* CallBAcks */
-            CustomEvents.Game.OnGameLoad += onLoad;
-
+            CustomEvents.Game.OnGameLoad += delegate
+            {
+                var onGameLoad = new Thread(Game_OnGameLoad);
+                onGameLoad.Start();
+            };
         }
 
-        private static void onLoad(EventArgs args)
+        private static void Game_OnGameLoad()
         {
-
             Game.PrintChat("Jayce - Sharp by DeTuKs DOnate if you love my assams :)");
-            Jayce.setSkillShots();
+            Jayce.SetSkillShots();
             try
             {
-
                 Config = new Menu("Jayce - Sharp", "Jayce", true);
                 //Orbwalker
                 Config.AddSubMenu(new Menu("Orbwalker", "Orbwalker"));
-                Jayce.orbwalker = new Orbwalking.Orbwalker(Config.SubMenu("Orbwalker"));
+                Jayce.Orbwalker = new Orbwalking.Orbwalker(Config.SubMenu("Orbwalker"));
+
                 //TS
-                Menu targetSelectorMenu = new Menu("Target Selector", "Target Selector");
-                SimpleTs.AddToMenu(targetSelectorMenu);
+                var targetSelectorMenu = new Menu("Target Selector", "Target Selector");
+                TargetSelector.AddToMenu(targetSelectorMenu);
                 Config.AddSubMenu(targetSelectorMenu);
+
                 //Combo
                 Config.AddSubMenu(new Menu("Combo Sharp", "combo"));
                 Config.SubMenu("combo").AddItem(new MenuItem("comboItems", "Use Items")).SetValue(true);
-                Config.SubMenu("combo").AddItem(new MenuItem("fullDMG", "Do full damage")).SetValue(new KeyBind('A', KeyBindType.Press));
-                Config.SubMenu("combo").AddItem(new MenuItem("injTarget", "Tower Injection")).SetValue(new KeyBind('G', KeyBindType.Press));
-
+                Config.SubMenu("combo")
+                    .AddItem(new MenuItem("fullDMG", "Do full damage"))
+                    .SetValue(new KeyBind('A', KeyBindType.Press));
+                Config.SubMenu("combo")
+                    .AddItem(new MenuItem("injTarget", "Tower Injection"))
+                    .SetValue(new KeyBind('G', KeyBindType.Press));
 
                 //Extra
                 Config.AddSubMenu(new Menu("Drawing Sharp", "drawing"));
                 Config.SubMenu("drawing").AddItem(new MenuItem("drawStuff", "Draw on/off")).SetValue(true);
-               
+
                 //Extra
                 Config.AddSubMenu(new Menu("Extra Sharp", "extra"));
-                Config.SubMenu("extra").AddItem(new MenuItem("shoot", "Shoot manual Q")).SetValue(new KeyBind('T', KeyBindType.Press));
+                Config.SubMenu("extra")
+                    .AddItem(new MenuItem("shoot", "Shoot manual Q"))
+                    .SetValue(new KeyBind('T', KeyBindType.Press));
 
                 //Debug
                 Config.AddSubMenu(new Menu("Debug", "debug"));
-                Config.SubMenu("debug").AddItem(new MenuItem("db_targ", "Debug Target")).SetValue(new KeyBind('N', KeyBindType.Press));
+                Config.SubMenu("debug")
+                    .AddItem(new MenuItem("db_targ", "Debug Target"))
+                    .SetValue(new KeyBind('N', KeyBindType.Press));
+
                 //Donate
                 Config.AddSubMenu(new Menu("Donate", "Donate"));
                 Config.SubMenu("debug").AddItem(new MenuItem("domateMe", "PayPal:")).SetValue(true);
@@ -73,93 +83,103 @@ namespace JayceSharp
 
 
                 Config.AddToMainMenu();
-                Drawing.OnDraw += onDraw;
+                Drawing.OnDraw += Drawing_OnDraw;
                 Game.OnGameUpdate += OnGameUpdate;
 
-                GameObject.OnCreate += OnCreateObject;
-                GameObject.OnDelete += OnDeleteObject;
-                Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
-
+                GameObject.OnCreate += GameObject_OnCreate;
+                GameObject.OnDelete += GameObject_OnDelete;
+                Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
             }
             catch
             {
                 Game.PrintChat("Oops. Something went wrong with Jayce - Sharp");
             }
-
         }
 
         private static void OnGameUpdate(EventArgs args)
         {
-            Jayce.checkForm();
-            Jayce.processCDs();
-            if (Config.Item("shoot").GetValue<KeyBind>().Active)//fullDMG
+            Jayce.CheckForm();
+            Jayce.ProcessCDs();
+            if (Config.Item("shoot").GetValue<KeyBind>().Active) // fullDMG
             {
-                Jayce.shootQE(Game.CursorPos);
+                Jayce.ShootQe(Game.CursorPos);
             }
 
-            if(!Jayce.E1.IsReady())
-                Jayce.castQon = new Vector3(0,0,0);
-            else if (Jayce.castQon.X != 0)
-                Jayce.shootQE(Jayce.castQon);
-
-            if (Config.Item("fullDMG").GetValue<KeyBind>().Active)//fullDMG
+            if (!Jayce.E1.IsReady())
             {
-                Obj_AI_Hero target = SimpleTs.GetTarget(Jayce.getBestRange(), SimpleTs.DamageType.Physical);
-                if (Jayce.lockedTarg == null)
-                    Jayce.lockedTarg = target;
-                Jayce.doFullDmg(Jayce.lockedTarg);
+                Jayce.CastQon = new Vector3(0, 0, 0);
             }
-            else
+            else if (Jayce.CastQon.X != 0)
             {
-                Jayce.lockedTarg = null;
+                Jayce.ShootQe(Jayce.CastQon);
             }
 
-            if (Config.Item("injTarget").GetValue<KeyBind>().Active)//fullDMG
+            if (Config.Item("fullDMG").GetValue<KeyBind>().Active) // fullDMG
             {
-                Obj_AI_Hero target = SimpleTs.GetTarget(Jayce.getBestRange(), SimpleTs.DamageType.Physical);
-                if (Jayce.lockedTarg == null)
-                    Jayce.lockedTarg = target;
-                Jayce.doJayceInj(Jayce.lockedTarg);
+                var target = TargetSelector.GetTarget(Jayce.GetBestRange(), TargetSelector.DamageType.Physical);
+                if (Jayce.LockedTarg == null)
+                {
+                    Jayce.LockedTarg = target;
+                }
+
+                Jayce.DoFullDmg(Jayce.LockedTarg);
             }
             else
             {
-                Jayce.lockedTarg = null;
+                Jayce.LockedTarg = null;
             }
-           // Console.Clear();
-           // Console.WriteLine(Jayce.isHammer +" "+Jayce.Qdata.SData.Name);
 
-            if (Jayce.castEonQ != null && (Jayce.castEonQ.TimeSpellEnd-2) > Game.Time)
-                Jayce.castEonQ = null;
-
-            if (Jayce.orbwalker.ActiveMode.ToString() == "Combo")
+            if (Config.Item("injTarget").GetValue<KeyBind>().Active) // fullDMG
             {
-                
-                Obj_AI_Hero target = SimpleTs.GetTarget(Jayce.getBestRange(), SimpleTs.DamageType.Physical);
-                Jayce.doCombo(target);
-            }
+                var target = TargetSelector.GetTarget(Jayce.GetBestRange(), TargetSelector.DamageType.Physical);
+                if (Jayce.LockedTarg == null)
+                {
+                    Jayce.LockedTarg = target;
+                }
 
-            if (Jayce.orbwalker.ActiveMode.ToString() == "Mixed")
+                Jayce.DoJayceInj(Jayce.LockedTarg);
+            }
+            else
             {
-
+                Jayce.LockedTarg = null;
             }
+            // Console.Clear();
+            // Console.WriteLine(Jayce.isHammer +" "+Jayce.Qdata.SData.Name);
 
-            if (Jayce.orbwalker.ActiveMode.ToString() == "LaneClear")
+            if (Jayce.CastEonQ != null && (Jayce.CastEonQ.TimeSpellEnd - 2) > Game.Time)
             {
-
+                Jayce.CastEonQ = null;
             }
 
-          
+            if (Jayce.Orbwalker.ActiveMode.ToString() == "Combo")
+            {
+                var target = TargetSelector.GetTarget(Jayce.GetBestRange(), TargetSelector.DamageType.Physical);
+                Jayce.DoCombo(target);
+            }
+
+            if (Jayce.Orbwalker.ActiveMode.ToString() == "Mixed")
+            {
+                // Hmm..
+            }
+
+            if (Jayce.Orbwalker.ActiveMode.ToString() == "LaneClear")
+            {
+                // Hmm..
+            }
         }
 
-        private static void onDraw(EventArgs args)
+        private static void Drawing_OnDraw(EventArgs args)
         {
             if (!Config.Item("drawStuff").GetValue<bool>())
+            {
                 return;
-            //Obj_AI_Hero target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
+            }
 
-          //  Utility.DrawCircle(Jayce.getBestPosToHammer(target), 70, Color.LawnGreen);
-           // Utility.DrawCircle(Jayce.Player.Position, 400, Color.Violet);
-            if (!Jayce.isHammer)
+            // Obj_AI_Hero target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
+
+            // Utility.DrawCircle(Jayce.getBestPosToHammer(target), 70, Color.LawnGreen);
+            // Utility.DrawCircle(Jayce.Player.Position, 400, Color.Violet);
+            if (!Jayce.IsHammer)
             {
                 Utility.DrawCircle(Jayce.Player.Position, 1550, Color.Violet);
                 Utility.DrawCircle(Jayce.Player.Position, 1100, Color.Red);
@@ -169,53 +189,55 @@ namespace JayceSharp
                 Utility.DrawCircle(Jayce.Player.Position, 600, Color.Red);
             }
 
-
             //Draw CD
-            Jayce.drawCD();
+            Jayce.DrawCd();
         }
 
-        private static void OnCreateObject(GameObject sender, EventArgs args)
+        private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         {
-            Obj_SpellMissile missile = sender as Obj_SpellMissile;
-            if (missile != null)
+            var missile = sender as Obj_SpellMissile;
+            if (missile == null)
             {
-                Obj_SpellMissile missle = missile;
+                return;
+            }
 
-                if (missle.SpellCaster.IsMe && missle.SData.Name == "JayceShockBlastMis")
-                {
-                   // Console.WriteLine("Created " +  missle.SData.Name );
-                    Jayce.myCastedQ = missle;
-                }
+            var missle = missile;
+            if (missle.SpellCaster.IsMe && missle.SData.Name == "JayceShockBlastMis")
+            {
+                // Console.WriteLine("Created " +  missle.SData.Name );
+                Jayce.MyCastedQ = missle;
             }
         }
 
-        private static void OnDeleteObject(GameObject sender, EventArgs args)
+        private static void GameObject_OnDelete(GameObject sender, EventArgs args)
         {
-            if (Jayce.myCastedQ != null && Jayce.myCastedQ.NetworkId == sender.NetworkId)
+            if (Jayce.MyCastedQ == null || Jayce.MyCastedQ.NetworkId != sender.NetworkId)
             {
-                Jayce.myCastedQ = null;
-                Jayce.castEonQ = null;
+                return;
             }
+
+            Jayce.MyCastedQ = null;
+            Jayce.CastEonQ = null;
         }
 
-        public static void OnProcessSpell(Obj_AI_Base obj, GameObjectProcessSpellCastEventArgs arg)
+        public static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base obj, GameObjectProcessSpellCastEventArgs arg)
         {
-            if (obj.IsMe)
+            if (!obj.IsMe)
             {
-
-                if (arg.SData.Name == "jayceshockblast")
-                {
-                    Jayce.castEonQ = arg;
-                }
-                else if (arg.SData.Name == "jayceaccelerationgate")
-                {
-                    Jayce.castEonQ = null;
-                   // Console.WriteLine("Cast dat E on: " + arg.SData.Name);
-                }
-
-                Jayce.getCDs(arg);
+                return;
             }
-        }
 
+            switch (arg.SData.Name)
+            {
+                case "jayceshockblast":
+                    Jayce.CastEonQ = arg;
+                    break;
+                case "jayceaccelerationgate":
+                    Jayce.CastEonQ = null;
+                    break;
+            }
+
+            Jayce.GetCDs(arg);
+        }
     }
 }
