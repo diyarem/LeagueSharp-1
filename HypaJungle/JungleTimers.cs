@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mime;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
@@ -25,11 +21,13 @@ namespace HypaJungle
             var context = new Context();
             Action ret = () =>
             {
-                if (!context.AlreadyCalled)
+                if (context.AlreadyCalled)
                 {
-                    action();
-                    context.AlreadyCalled = true;
+                    return;
                 }
+
+                action();
+                context.AlreadyCalled = true;
             };
 
             return ret;
@@ -43,24 +41,22 @@ namespace HypaJungle
 
     internal class JungleCamp
     {
+        public int BonusPrio;
+        public byte CampId;
+        public int Dps;
+        public int Health;
+        public bool IsBuff;
+        public bool IsDragBaron;
+        public int Priority = 0;
+        public int Team;
+        public float TimeToCamp = 0;
+        public bool WillKillMe = false;
         public TimeSpan SpawnTime { get; set; }
         public TimeSpan RespawnTimer { get; set; }
         public Vector3 Position { get; set; }
         public List<JungleMinion> Minions { get; set; }
         public JungleCampState State { get; set; }
         public float ClearTick { get; set; }
-        public bool isBuff;
-        public bool isDragBaron;
-        public int team;
-        public int dps = 0;
-        public int health = 0;
-        public byte campId;
-        public int bonusPrio = 0;
-
-        public float timeToCamp = 0;
-        public int priority = 0;
-        public bool willKillMe = false;
-
     }
 
     internal class JungleMinion
@@ -77,7 +73,9 @@ namespace HypaJungle
 
     internal class JungleTimers
     {
-        public readonly List<JungleCamp> _jungleCamps = new List<JungleCamp>
+        private readonly Action _onLoadAction;
+
+        public readonly List<JungleCamp> JungleCamps = new List<JungleCamp>
         {
             new JungleCamp //Baron
             {
@@ -88,12 +86,12 @@ namespace HypaJungle
                 {
                     new JungleMinion("Worm12.1.1")
                 },
-                isBuff = false,
-                isDragBaron = true,
-                team = 2,
-                dps = 99,
-                health = 1500,
-                campId = 12
+                IsBuff = false,
+                IsDragBaron = true,
+                Team = 2,
+                Dps = 99,
+                Health = 1500,
+                CampId = 12
             },
             new JungleCamp //Dragon
             {
@@ -104,10 +102,10 @@ namespace HypaJungle
                 {
                     new JungleMinion("SRU_Dragon6.1.1")
                 },
-                isBuff = false,
-                isDragBaron = true,
-                team = 2,
-                campId = 6
+                IsBuff = false,
+                IsDragBaron = true,
+                Team = 2,
+                CampId = 6
             },
             //Order
             new JungleCamp //Wight
@@ -119,13 +117,13 @@ namespace HypaJungle
                 {
                     new JungleMinion("SRU_Gromp13.1.1")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                team = 0,
-                dps = (int)(90*0.64f),
-                health = 1600,
-                campId = 13,
-                bonusPrio = 3
+                IsBuff = false,
+                IsDragBaron = false,
+                Team = 0,
+                Dps = (int) (90*0.64f),
+                Health = 1600,
+                CampId = 13,
+                BonusPrio = 3
             },
             new JungleCamp //Blue
             {
@@ -138,12 +136,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_BlueMini1.1.2"),
                     new JungleMinion("SRU_BlueMini21.1.3")
                 },
-                isBuff = true,
-                isDragBaron = false,
-                dps = (int)(80*0.64f),
-                health = 2000,
-                team = 0,
-                campId = 1
+                IsBuff = true,
+                IsDragBaron = false,
+                Dps = (int) (80*0.64f),
+                Health = 2000,
+                Team = 0,
+                CampId = 1
             },
             new JungleCamp //Wolfs
             {
@@ -156,12 +154,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_MurkwolfMini2.1.2"),
                     new JungleMinion("SRU_MurkwolfMini2.1.3")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                dps = (int)(73*0.59),
-                health = 1320,
-                team = 0,
-                campId = 2
+                IsBuff = false,
+                IsDragBaron = false,
+                Dps = (int) (73*0.59),
+                Health = 1320,
+                Team = 0,
+                CampId = 2
             },
             new JungleCamp //Wraith
             {
@@ -175,12 +173,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_RazorbeakMini3.1.3"),
                     new JungleMinion("SRU_RazorbeakMini3.1.4")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                dps = (int)(70*0.64f),
-                health = 1600,
-                team = 0,
-                campId = 3
+                IsBuff = false,
+                IsDragBaron = false,
+                Dps = (int) (70*0.64f),
+                Health = 1600,
+                Team = 0,
+                CampId = 3
             },
             new JungleCamp //Red
             {
@@ -193,12 +191,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_RedMini4.1.2"),
                     new JungleMinion("SRU_RedMini4.1.3")
                 },
-                isBuff = true,
-                isDragBaron = false,
-                dps = (int)(104*0.60f),
-                health = 1800,
-                team = 0,
-                campId = 4
+                IsBuff = true,
+                IsDragBaron = false,
+                Dps = (int) (104*0.60f),
+                Health = 1800,
+                Team = 0,
+                CampId = 4
             },
             new JungleCamp //Golems
             {
@@ -210,13 +208,13 @@ namespace HypaJungle
                     new JungleMinion("SRU_Krug5.1.2"),
                     new JungleMinion("SRU_KrugMini5.1.1")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                dps = (int)(100*0.60f),
-                health = 1440,
-                team = 0,
-                campId = 5,
-                bonusPrio = 7
+                IsBuff = false,
+                IsDragBaron = false,
+                Dps = (int) (100*0.60f),
+                Health = 1440,
+                Team = 0,
+                CampId = 5,
+                BonusPrio = 7
             },
             //Chaos
             new JungleCamp //Golems
@@ -229,13 +227,13 @@ namespace HypaJungle
                     new JungleMinion("SRU_Krug11.1.2"),
                     new JungleMinion("SRU_KrugMini11.1.1")
                 },
-                isBuff = true,
-                isDragBaron = false,
-                dps = (int)(100*0.60f),
-                health = 1440,
-                team = 1,
-                campId = 11,
-                bonusPrio = 3
+                IsBuff = true,
+                IsDragBaron = false,
+                Dps = (int) (100*0.60f),
+                Health = 1440,
+                Team = 1,
+                CampId = 11,
+                BonusPrio = 3
             },
             new JungleCamp //Red
             {
@@ -248,12 +246,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_RedMini10.1.2"),
                     new JungleMinion("SRU_RedMini10.1.3")
                 },
-                isBuff = true,
-                isDragBaron = false,
-                dps = (int)(104*0.60f),
-                health = 1800,
-                team = 1,
-                campId = 10
+                IsBuff = true,
+                IsDragBaron = false,
+                Dps = (int) (104*0.60f),
+                Health = 1800,
+                Team = 1,
+                CampId = 10
             },
             new JungleCamp //Wraith
             {
@@ -267,12 +265,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_RazorbeakMini9.1.3"),
                     new JungleMinion("SRU_RazorbeakMini9.1.4")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                dps = (int)(70*0.64f),
-                health = 1600,
-                team = 1,
-                campId = 9
+                IsBuff = false,
+                IsDragBaron = false,
+                Dps = (int) (70*0.64f),
+                Health = 1600,
+                Team = 1,
+                CampId = 9
             },
             new JungleCamp //Wolfs
             {
@@ -285,12 +283,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_MurkwolfMini8.1.2"),
                     new JungleMinion("SRU_MurkwolfMini8.1.3")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                dps = (int)(73*0.59),
-                health = 1320,
-                team = 1,
-                campId = 8
+                IsBuff = false,
+                IsDragBaron = false,
+                Dps = (int) (73*0.59),
+                Health = 1320,
+                Team = 1,
+                CampId = 8
             },
             new JungleCamp //Blue
             {
@@ -303,13 +301,12 @@ namespace HypaJungle
                     new JungleMinion("SRU_BlueMini7.1.2"),
                     new JungleMinion("SRU_BlueMini27.1.3")
                 },
-                isBuff = true,
-                isDragBaron = false,
-                dps = (int)(80*0.64f),
-                health = 2000,
-                team = 1,
-                campId = 7
-
+                IsBuff = true,
+                IsDragBaron = false,
+                Dps = (int) (80*0.64f),
+                Health = 2000,
+                Team = 1,
+                CampId = 7
             },
             new JungleCamp //Wight
             {
@@ -320,15 +317,15 @@ namespace HypaJungle
                 {
                     new JungleMinion("SRU_Gromp14.1.1")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                team = 1,
-                dps = (int)(90*0.64f),
-                health = 1600,
-                campId = 14,
-                bonusPrio = 3
+                IsBuff = false,
+                IsDragBaron = false,
+                Team = 1,
+                Dps = (int) (90*0.64f),
+                Health = 1600,
+                CampId = 14,
+                BonusPrio = 3
             },
-             new JungleCamp //Crab
+            new JungleCamp //Crab
             {
                 SpawnTime = TimeSpan.FromSeconds(150),
                 RespawnTimer = TimeSpan.FromSeconds(180),
@@ -337,13 +334,13 @@ namespace HypaJungle
                 {
                     new JungleMinion("Sru_Crab15.1.1")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                team = 3,
-                campId = 15,
-                bonusPrio = 3
+                IsBuff = false,
+                IsDragBaron = false,
+                Team = 3,
+                CampId = 15,
+                BonusPrio = 3
             },
-             new JungleCamp //Crab
+            new JungleCamp //Crab
             {
                 SpawnTime = TimeSpan.FromSeconds(150),
                 RespawnTimer = TimeSpan.FromSeconds(180),
@@ -352,19 +349,17 @@ namespace HypaJungle
                 {
                     new JungleMinion("Sru_Crab16.1.1")
                 },
-                isBuff = false,
-                isDragBaron = false,
-                team = 3,
-                campId = 16,
-                bonusPrio = 3
+                IsBuff = false,
+                IsDragBaron = false,
+                Team = 3,
+                CampId = 16,
+                BonusPrio = 3
             }
         };
 
-        private readonly Action _onLoadAction;
-
         public JungleTimers()
         {
-            Console.WriteLine("Jungle timers onn");
+            Console.WriteLine(@"Jungle timers onn");
             _onLoadAction = new CallOnce().A(OnLoad);
             Game.OnGameUpdate += OnGameUpdate;
         }
@@ -388,38 +383,38 @@ namespace HypaJungle
             }
         }
 
-        public bool closestJCUp(Vector3 pos)
+        public bool ClosestJcUp(Vector3 pos)
         {
-            JungleCamp closest = _jungleCamps.OrderBy(jc => Vector3.DistanceSquared(pos, jc.Position)).First();
-            float delta = Game.Time - closest.ClearTick;
-            if (delta < closest.RespawnTimer.TotalSeconds)
-                return false;
-            return true;
+            var closest = JungleCamps.OrderBy(jc => Vector3.DistanceSquared(pos, jc.Position)).First();
+            var delta = Game.Time - closest.ClearTick;
+            return !(delta < closest.RespawnTimer.TotalSeconds);
         }
 
-        public JungleCamp getBestCampToGo()
+        public JungleCamp GetBestCampToGo()
         {
-            float lessDist = float.MaxValue;
+            var lessDist = float.MaxValue;
             JungleCamp bestCamp = null;
-            foreach (var jungleCamp in _jungleCamps)
+            foreach (var jungleCamp in JungleCamps)
             {
-                var distTillCamp = getPathLenght(HypaJungle.player.GetPath(jungleCamp.Position));
-                var timeToCamp = distTillCamp/HypaJungle.player.MoveSpeed;
-                float timeTillSpawn = Game.Time - jungleCamp.ClearTick;
-                Console.WriteLine(jungleCamp.ClearTick + " : " + Game.Time);
-                if (timeTillSpawn + timeToCamp > jungleCamp.RespawnTimer.TotalSeconds && lessDist > distTillCamp)
+                var distTillCamp = GetPathLenght(HypaJungle.Player.GetPath(jungleCamp.Position));
+                var timeToCamp = distTillCamp/HypaJungle.Player.MoveSpeed;
+                var timeTillSpawn = Game.Time - jungleCamp.ClearTick;
+                Console.WriteLine(jungleCamp.ClearTick + @" : " + Game.Time);
+                if (!(timeTillSpawn + timeToCamp > jungleCamp.RespawnTimer.TotalSeconds) || !(lessDist > distTillCamp))
                 {
-                    lessDist = distTillCamp;
-                    bestCamp = jungleCamp;
+                    continue;
                 }
+
+                lessDist = distTillCamp;
+                bestCamp = jungleCamp;
             }
             return bestCamp;
         }
 
-        public float getPathLenght(Vector3[] vecs)
+        public float GetPathLenght(Vector3[] vecs)
         {
             float dist = 0;
-            Vector3 from = vecs[0];
+            var from = vecs[0];
             foreach (var vec in vecs)
             {
                 dist += Vector3.Distance(from, vec);
@@ -428,21 +423,24 @@ namespace HypaJungle
             return dist;
         }
 
-
         private void ObjectOnDelete(GameObject sender, EventArgs args)
         {
             try
             {
                 if (sender.Type != GameObjectType.obj_AI_Minion)
+                {
                     return;
+                }
 
-                var neutral = (Obj_AI_Minion)sender;
+                var neutral = (Obj_AI_Minion) sender;
                 if (neutral.Name.Contains("Minion") || !neutral.IsValid)
+                {
                     return;
+                }
 
                 foreach (
-                    JungleMinion minion in
-                        from camp in _jungleCamps
+                    var minion in
+                        from camp in JungleCamps
                         from minion in camp.Minions
                         where minion.Name == neutral.Name
                         select minion)
@@ -457,36 +455,35 @@ namespace HypaJungle
             }
         }
 
-        public void enableCamp(byte id)
+        public void EnableCamp(byte id)
         {
-            foreach (var camp in _jungleCamps)
+            foreach (var camp in JungleCamps.Where(camp => camp.CampId == id))
             {
-                if (camp.campId == id)
-                {
-                    camp.ClearTick = 0;
-                    camp.State = JungleCampState.Alive;
-                }
+                camp.ClearTick = 0;
+                camp.State = JungleCampState.Alive;
             }
         }
 
-        public void disableCamp(byte id)
+        public void DisableCamp(byte id)
         {
-            foreach (var camp in _jungleCamps)
+            foreach (var camp in JungleCamps)
             {
-                if (camp.campId == id)
+                if (camp.CampId == id)
                 {
                     camp.ClearTick = Game.Time;
                     camp.State = JungleCampState.Dead;
                 }
-                if (JungleClearer.focusedCamp != null)
+
+                if (JungleClearer.FocusedCamp == null)
                 {
-                    if (camp.campId == JungleClearer.focusedCamp.campId)
-                    {
-                        if (HypaJungle.Config.Item("autoBuy").GetValue<bool>())
-                            JungleClearer.jcState = JungleClearer.JungleCleanState.GoingToShop;
-                        else
-                            JungleClearer.jcState = JungleClearer.JungleCleanState.SearchingBestCamp;
-                    }
+                    continue;
+                }
+
+                if (camp.CampId == JungleClearer.FocusedCamp.CampId)
+                {
+                    JungleClearer.JcState = HypaJungle.Config.Item("autoBuy").GetValue<bool>()
+                        ? JungleClearer.JungleCleanState.GoingToShop
+                        : JungleClearer.JungleCleanState.SearchingBestCamp;
                 }
             }
         }
@@ -496,16 +493,19 @@ namespace HypaJungle
             try
             {
                 if (sender.Type != GameObjectType.obj_AI_Minion)
+                {
                     return;
+                }
 
-                var neutral = (Obj_AI_Minion)sender;
-
+                var neutral = (Obj_AI_Minion) sender;
                 if (neutral.Name.Contains("Minion") || !neutral.IsValid)
+                {
                     return;
+                }
 
                 foreach (
-                    JungleMinion minion in
-                        from camp in _jungleCamps
+                    var minion in
+                        from camp in JungleCamps
                         from minion in camp.Minions
                         where minion.Name == neutral.Name
                         select minion)
@@ -520,14 +520,14 @@ namespace HypaJungle
             }
         }
 
-        public void setUpMinionsPlace(Obj_AI_Minion neutral)
+        public void SetUpMinionsPlace(Obj_AI_Minion neutral)
         {
             foreach (
-                   JungleMinion minion in
-                       from camp in _jungleCamps
-                       from minion in camp.Minions
-                       where minion.Name == neutral.Name
-                       select minion)
+                var minion in
+                    from camp in JungleCamps
+                    from minion in camp.Minions
+                    where minion.Name == neutral.Name
+                    select minion)
             {
                 minion.Unit = neutral;
                 minion.Dead = neutral.IsDead;
@@ -536,34 +536,35 @@ namespace HypaJungle
 
         private void UpdateCamps()
         {
-            foreach (JungleCamp camp in _jungleCamps)
+            foreach (var camp in JungleCamps)
             {
-                bool allAlive = true;
-                bool allDead = true;
+                var allDead = true;
 
-                bool gotLightNoMinions = true;
-
-                foreach (JungleMinion minion in camp.Minions)
+                foreach (var minion in camp.Minions)
                 {
                     if (minion.Unit != null)
+                    {
                         minion.Dead = minion.Unit.IsDead;
+                    }
 
                     if (NavMesh.LineOfSightTest(camp.Position, camp.Position) && minion.Unit == null)
                     {
-                       // allAlive = false;
+                        // allAlive = false;
                     }
-                    
+
 
                     if (minion.Dead)
-                        allAlive = false;
+                        ;
                     else
+                    {
                         allDead = false;
+                    }
                 }
 
                 switch (camp.State)
                 {
                     case JungleCampState.Alive:
-                        if (allDead && camp.Position.Distance(HypaJungle.player.Position)<600)
+                        if (allDead && camp.Position.Distance(HypaJungle.Player.Position) < 600)
                         {
                             camp.State = JungleCampState.Dead;
                             camp.ClearTick = Game.Time;
@@ -572,7 +573,6 @@ namespace HypaJungle
                                 min.Unit = null;
                                 min.Dead = true;
                             }
-
                         }
                         break;
                 }

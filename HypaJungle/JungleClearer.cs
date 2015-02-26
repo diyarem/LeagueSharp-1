@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using HypaJungle.Champions;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
 
 namespace HypaJungle
 {
-    class JungleClearer
+    internal class JungleClearer
     {
         public enum JungleCleanState
         {
@@ -23,210 +22,228 @@ namespace HypaJungle
             ThinkAfterFinishCamp
         }
 
-        public static List<String> supportedChamps = new List<string> { "MasterYi", "Udyr", "Warwick", "Shyvana", "LeeSin", "Amumu", "Rengar" }; 
-
-
-        public static Obj_AI_Hero player = ObjectManager.Player;
-
-        public static JungleCamp focusedCamp;
-
-        public static bool recalCasted = true;
-
-
-        public static JungleCamp skipCamp;
-
-        public static JungleCleanState jcState = JungleCleanState.GoingToShop;
-
-        public static Jungler jungler = new MasterYi();
-
-        public static void setUpJCleaner()
+        public static List<String> SupportedChamps = new List<string>
         {
-            switch (player.ChampionName.ToLower())
+            "MasterYi",
+            "Udyr",
+            "Warwick",
+            "Shyvana",
+            "LeeSin",
+            "Amumu",
+            "Rengar"
+        };
+
+        public static Obj_AI_Hero Player = ObjectManager.Player;
+        public static JungleCamp FocusedCamp;
+        public static bool RecalCasted = true;
+        public static JungleCamp SkipCamp;
+        public static JungleCleanState JcState = JungleCleanState.GoingToShop;
+        public static Jungler Jungler = new MasterYi();
+
+        public static void SetUpJCleaner()
+        {
+            switch (Player.ChampionName.ToLower())
             {
-                case("warwick"):
-                    jungler = new Warwick();
+                case ("warwick"):
+                    Jungler = new Warwick();
                     Game.PrintChat("Warwick loaded");
                     break;
                 case "masteryi":
-                    jungler = new MasterYi();
+                    Jungler = new MasterYi();
                     Game.PrintChat("MasterYi loaded");
                     break;
                 case "udyr":
-                    jungler = new Udyr();
+                    Jungler = new Udyr();
                     Game.PrintChat("Udyr loaded");
                     break;
                 case "shyvana":
-                    jungler = new Shyvana();
+                    Jungler = new Shyvana();
                     Game.PrintChat("Shyvana loaded");
                     break;
                 case "leesin":
-                    jungler = new LeeSin();
+                    Jungler = new LeeSin();
                     Game.PrintChat("LeeSin loaded");
                     break;
                 case "amumu":
-                    jungler = new Amumu();
+                    Jungler = new Amumu();
                     Game.PrintChat("Amumu loaded");
                     break;
                 case "rengar":
-                    jungler = new Rengar();
+                    Jungler = new Rengar();
                     Game.PrintChat("Rengar loaded");
                     break;
             }
 
             Game.PrintChat("Other junglers coming soon!");
-
         }
 
-        public static void updateJungleCleaner()
+        public static void UpdateJungleCleaner()
         {
-            if (player.IsDead)
+            if (Player.IsDead)
             {
-                jcState = JungleCleanState.RecallForHeal;
+                JcState = JungleCleanState.RecallForHeal;
                 return;
             }
 
-            if (jcState == JungleCleanState.SearchingBestCamp)
+            if (JcState == JungleCleanState.SearchingBestCamp)
             {
-                focusedCamp = getBestCampToGo();
-                if (focusedCamp != null)
+                FocusedCamp = GetBestCampToGo();
+                if (FocusedCamp != null)
                 {
                     //puss out or kill?
-                    if (focusedCamp.willKillMe  || (player.Health/player.MaxHealth <0.5f && focusedCamp.timeToCamp>12))
+                    if (FocusedCamp.WillKillMe || (Player.Health/Player.MaxHealth < 0.5f && FocusedCamp.TimeToCamp > 12))
                     {
-                        Console.WriteLine("gona diee");
-                        jcState = JungleCleanState.RecallForHeal;
+                        Console.WriteLine(@"Gona diee!!");
+                        JcState = JungleCleanState.RecallForHeal;
                     }
                     else
                     {
-                        jcState = JungleCleanState.RunningToCamp;
+                        JcState = JungleCleanState.RunningToCamp;
                     }
                 }
                 else
                 {
-                    jcState = JungleCleanState.RecallForHeal;
+                    JcState = JungleCleanState.RecallForHeal;
                 }
             }
 
-            if (jcState == JungleCleanState.RunningToCamp)
+            if (JcState == JungleCleanState.RunningToCamp)
             {
-                if (focusedCamp.State != JungleCampState.Dead && focusedCamp.team != 3)
-                    jungler.castWhenNear(focusedCamp);
-                jungler.checkItems();
-                logicRunToCamp();
-            }
-
-            if (jcState == JungleCleanState.RunningToCamp && (HypaJungle.player.Position.Distance(focusedCamp.Position) < 200 || isCampVisible()))
-            {
-                jcState = JungleCleanState.WaitingMinions;
-            }
-
-            if (jcState == JungleCleanState.WaitingMinions)
-            {
-                doWhileIdling();
-            }
-
-            if (jcState == JungleCleanState.WaitingMinions && (isCampVisible()))
-            {
-                jcState = JungleCleanState.AttackingMinions;
-            }
-
-            if (jcState == JungleCleanState.AttackingMinions)
-            {
-                attackCampMinions();
-            }
-
-            if (jcState == JungleCleanState.AttackingMinions && isCampFinished())
-            {
-                if(HypaJungle.Config.Item("autoBuy").GetValue<bool>())
-                    jcState = JungleCleanState.GoingToShop;
-                else
-                    jcState = JungleCleanState.SearchingBestCamp;
-            }
-
-            if (jcState == JungleCleanState.ThinkAfterFinishCamp)
-            {
-                jcState = JungleCleanState.SearchingBestCamp;
-
-            }
-
-            if (jcState == JungleCleanState.RecallForHeal)
-            {
-                if (jungler.recall.IsReady() && !player.IsChanneling && !jungler.inSpwan() && !recalCasted)
+                if (FocusedCamp != null && (FocusedCamp.State != JungleCampState.Dead && FocusedCamp.Team != 3))
                 {
-                    jungler.recall.Cast();
-                    recalCasted = true;
+                    Jungler.CastWhenNear(FocusedCamp);
+                }
+                Jungler.CheckItems();
+                LogicRunToCamp();
+            }
+
+            if (FocusedCamp != null && (JcState == JungleCleanState.RunningToCamp &&
+                                        (Geometry.Distance(HypaJungle.Player.Position, FocusedCamp.Position) < 200 ||
+                                         IsCampVisible())))
+            {
+                JcState = JungleCleanState.WaitingMinions;
+            }
+
+            if (JcState == JungleCleanState.WaitingMinions)
+            {
+                DoWhileIdling();
+            }
+
+            if (JcState == JungleCleanState.WaitingMinions && (IsCampVisible()))
+            {
+                JcState = JungleCleanState.AttackingMinions;
+            }
+
+            if (JcState == JungleCleanState.AttackingMinions)
+            {
+                AttackCampMinions();
+            }
+
+            if (JcState == JungleCleanState.AttackingMinions && IsCampFinished())
+            {
+                JcState = HypaJungle.Config.Item("autoBuy").GetValue<bool>()
+                    ? JungleCleanState.GoingToShop
+                    : JungleCleanState.SearchingBestCamp;
+            }
+
+            if (JcState == JungleCleanState.ThinkAfterFinishCamp)
+            {
+                JcState = JungleCleanState.SearchingBestCamp;
+            }
+
+            if (JcState == JungleCleanState.RecallForHeal)
+            {
+                if (Jungler.Recall.IsReady() && !Player.Spellbook.IsChanneling && !Jungler.InSpwan() && !RecalCasted)
+                {
+                    Jungler.Recall.Cast();
+                    RecalCasted = true;
                 }
 
-                if (jungler.inSpwan())
+                if (Jungler.InSpwan())
                 {
                     if (HypaJungle.Config.Item("autoBuy").GetValue<bool>())
                     {
-                        jcState = JungleCleanState.GoingToShop;
+                        JcState = JungleCleanState.GoingToShop;
                     }
                     else
                     {
-                        if (jungler.inSpwan() && player.Health > player.MaxHealth * 0.7f && (!jungler.gotMana || player.Mana > player.MaxMana * 0.7f))
-                            jcState = JungleCleanState.SearchingBestCamp;
+                        if (Jungler.InSpwan() && Player.Health > Player.MaxHealth*0.7f &&
+                            (!Jungler.GotMana || Player.Mana > Player.MaxMana*0.7f))
+                        {
+                            JcState = JungleCleanState.SearchingBestCamp;
+                        }
                     }
                 }
-
-
             }
 
-            if (jcState == JungleCleanState.GoingToShop)
+            if (JcState == JungleCleanState.GoingToShop)
             {
                 if (!HypaJungle.Config.Item("autoBuy").GetValue<bool>())
-                    jcState = JungleCleanState.SearchingBestCamp;
-
-                if (jungler.inSpwan())
                 {
-                    jungler.getItemPassiveBoostDps();
-                    jungler.setupSmite();
+                    JcState = JungleCleanState.SearchingBestCamp;
                 }
 
-                if (jungler.inSpwan() && player.IsChanneling)
+                if (Jungler.InSpwan())
                 {
-                    Vector3 stopRecPos = new Vector3(6, 30, 2);
-                    player.IssueOrder(GameObjectOrder.MoveTo, player.Position + stopRecPos);
+                    Jungler.GetItemPassiveBoostDps();
+                    Jungler.SetupSmite();
                 }
 
-                if (jungler.nextItem != null && player.GoldCurrent >= jungler.nextItem.goldReach )
+                if (Jungler.InSpwan() && Player.Spellbook.IsChanneling)
                 {
-                    if (jungler.recall.IsReady() && !player.IsChanneling && !jungler.inSpwan() && !recalCasted)
+                    var stopRecPos = new Vector3(6, 30, 2);
+                    Player.IssueOrder(GameObjectOrder.MoveTo, Player.Position + stopRecPos);
+                }
+
+                if (Jungler.NextItem != null && Player.GoldCurrent >= Jungler.NextItem.GoldReach)
+                {
+                    if (Jungler.Recall.IsReady() && !Player.Spellbook.IsChanneling && !Jungler.InSpwan() && !RecalCasted)
                     {
-                        jungler.recall.Cast();
-                        recalCasted = true;
+                        Jungler.Recall.Cast();
+                        RecalCasted = true;
                     }
                 }
                 else
                 {
-                    if (jungler.inSpwan() && player.Health > player.MaxHealth * 0.8f && (!jungler.gotMana || player.Mana > player.MaxMana * 0.8f))
-                        jcState = JungleCleanState.SearchingBestCamp;
-                    if(!player.IsChanneling && !jungler.inSpwan())
-                        jcState = JungleCleanState.SearchingBestCamp;
+                    if (Jungler.InSpwan() && Player.Health > Player.MaxHealth*0.8f &&
+                        (!Jungler.GotMana || Player.Mana > Player.MaxMana*0.8f))
+                    {
+                        JcState = JungleCleanState.SearchingBestCamp;
+                    }
 
+                    if (!Player.Spellbook.IsChanneling && !Jungler.InSpwan())
+                    {
+                        JcState = JungleCleanState.SearchingBestCamp;
+                    }
                 }
             }
-            else if (jcState != JungleCleanState.RecallForHeal)
+            else if (JcState != JungleCleanState.RecallForHeal)
             {
-                recalCasted = false;
+                RecalCasted = false;
             }
 
-            if (jcState == JungleCleanState.GoingToShop && jungler.inSpwan())
+            if (JcState != JungleCleanState.GoingToShop || !Jungler.InSpwan())
             {
-                if (jungler.nextItem != null && player.GoldCurrent >= jungler.nextItem.goldReach )
-                    jungler.buyItems();
-                if (player.Health > player.MaxHealth * 0.75f && player.Mana > player.MaxMana * 0.75f)
-                    jcState = JungleCleanState.SearchingBestCamp;
+                return;
+            }
+
+            if (Jungler.NextItem != null && Player.GoldCurrent >= Jungler.NextItem.GoldReach)
+            {
+                Jungler.BuyItems();
+            }
+
+            if (Player.Health > Player.MaxHealth*0.75f && Player.Mana > Player.MaxMana*0.75f)
+            {
+                JcState = JungleCleanState.SearchingBestCamp;
             }
         }
 
-        public static bool canLeaveBase()
+        public static bool CanLeaveBase()
         {
-            if (jungler.inSpwan() && player.Health > player.MaxHealth*0.7f &&
-                (!jungler.gotMana || player.Mana > player.MaxMana*0.7f))
+            if (Jungler.InSpwan() && Player.Health > Player.MaxHealth*0.7f &&
+                (!Jungler.GotMana || Player.Mana > Player.MaxMana*0.7f))
             {
-                if (jungler.nextItem.goldReach - player.GoldCurrent > 16)
+                if (Jungler.NextItem.GoldReach - Player.GoldCurrent > 16)
                 {
                     return true;
                 }
@@ -234,108 +251,96 @@ namespace HypaJungle
             return false;
         }
 
-        public static bool noEnemiesAround()
+        public static bool NoEnemiesAround()
         {
-            return (MinionManager.GetMinions(player.Position, 500).Count == 0);
+            return (MinionManager.GetMinions(Player.Position, 500).Count == 0);
         }
 
-
-
-        public static bool isCampVisible()
+        public static bool IsCampVisible()
         {
-            getJungleMinionsManualy();
+            GetJungleMinionsManualy();
 
-            foreach (var min in focusedCamp.Minions)
-            {
-                if (min.Unit != null && min.Unit.IsVisible)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return FocusedCamp.Minions.Any(min => min.Unit != null && min.Unit.IsVisible);
         }
 
         //will need to impliment all shortcuts here
-        public static void logicRunToCamp()
+        public static void LogicRunToCamp()
         {
-            jungler.doWhileRunningIdlin();
+            Jungler.DoWhileRunningIdlin();
 
-            if (!jungler.canMove())
+            if (!Jungler.CanMove())
             {
-                jcState = JungleCleanState.SearchingBestCamp;
+                JcState = JungleCleanState.SearchingBestCamp;
                 return;
             }
 
-            if ( !HypaJungle.player.IsMoving || HypaJungle.player.Path.Count() ==0 
-                || HypaJungle.player.Path.Last().Distance(focusedCamp.Position) > 50)
+            if (!HypaJungle.Player.IsMoving || Enumerable.Count(HypaJungle.Player.Path) == 0
+                || Enumerable.Last(HypaJungle.Player.Path).Distance(FocusedCamp.Position) > 50)
             {
-                HypaJungle.player.IssueOrder(GameObjectOrder.MoveTo, focusedCamp.Position);
+                HypaJungle.Player.IssueOrder(GameObjectOrder.MoveTo, FocusedCamp.Position);
             }
         }
 
-        public static void attackCampMinions()
+        public static void AttackCampMinions()
         {
-            if (focusedCamp == null || focusedCamp.Minions == null)
-                return;
-
-            getJungleMinionsManualy();
-            if (!jungler.gotOverTime || !HypaJungle.Config.Item("getOverTime").GetValue<bool>())
+            if (FocusedCamp == null || FocusedCamp.Minions == null)
             {
-                    JungleMinion campMinions =
-                   focusedCamp.Minions.Where(min => min != null && min.Unit != null && min.Unit is Obj_AI_Minion && !min.Unit.IsDead)
-                       .OrderByDescending(min => ((Obj_AI_Minion)min.Unit).MaxHealth).FirstOrDefault();
-                    if (campMinions.Unit is Obj_AI_Minion)
-                        jungler.startAttack((Obj_AI_Minion)campMinions.Unit, false);
-                
-               
+                return;
+            }
+
+            GetJungleMinionsManualy();
+            if (!Jungler.GotOverTime || !HypaJungle.Config.Item("getOverTime").GetValue<bool>())
+            {
+                var campMinions =
+                    FocusedCamp.Minions.Where(
+                        min => min != null && min.Unit is Obj_AI_Minion && !min.Unit.IsDead)
+                        .OrderByDescending(min => ((Obj_AI_Minion) min.Unit).MaxHealth).FirstOrDefault();
+                if (campMinions != null && campMinions.Unit is Obj_AI_Minion)
+                {
+                    Jungler.StartAttack((Obj_AI_Minion) campMinions.Unit, false);
+                }
             }
             else
             {
-                JungleMinion campMinions =
-                    focusedCamp.Minions.Where(min => min != null && min.Unit != null && min.Unit is Obj_AI_Minion && !min.Unit.IsDead)
-                    .OrderBy(min => minHasOvertime(((Obj_AI_Minion)min.Unit))).ThenByDescending(min => ((Obj_AI_Minion)min.Unit).MaxHealth)
+                var campMinions =
+                    FocusedCamp.Minions.Where(
+                        min => min != null && min.Unit is Obj_AI_Minion && !min.Unit.IsDead)
+                        .OrderBy(min => MinHasOvertime(((Obj_AI_Minion) min.Unit)))
+                        .ThenByDescending(min => ((Obj_AI_Minion) min.Unit).MaxHealth)
                         .FirstOrDefault();
-                       // .OrderByDescending(min => ((Obj_AI_Minion)min.Unit).MaxHealth).First();
-               
-                if (campMinions.Unit is Obj_AI_Minion)
-                    jungler.startAttack((Obj_AI_Minion)campMinions.Unit,false);
+                // .OrderByDescending(min => ((Obj_AI_Minion)min.Unit).MaxHealth).First();
 
+                if (campMinions != null && campMinions.Unit is Obj_AI_Minion)
+                    Jungler.StartAttack((Obj_AI_Minion) campMinions.Unit, false);
             }
-
         }
 
-        public static int minHasOvertime(Obj_AI_Base min)
+        public static int MinHasOvertime(Obj_AI_Base min)
         {
-            foreach (var buf in min.Buffs)
-            {
-                if (buf.Name == "itemmonsterburn")
-                    return 5;
-            }
-            return 0;
+            return min.Buffs.Any(buf => buf.Name == "itemmonsterburn") ? 5 : 0;
         }
 
-        public static void getJungleMinionsManualy()
+        public static void GetJungleMinionsManualy()
         {
-            List<Obj_AI_Base> jungles = MinionManager.GetMinions(HypaJungle.player.Position, 1000, MinionTypes.All,MinionTeam.Neutral).ToList();
+            var jungles =
+                MinionManager.GetMinions(HypaJungle.Player.Position, 1000, MinionTypes.All, MinionTeam.Neutral).ToList();
             foreach (var jun in jungles)
             {
-                HypaJungle.jTimer.setUpMinionsPlace((Obj_AI_Minion)jun);
+                HypaJungle.JTimer.SetUpMinionsPlace((Obj_AI_Minion) jun);
             }
         }
 
-        public static bool isCampFinished()
+        public static bool IsCampFinished()
         {
-            if (focusedCamp.State == JungleCampState.Dead && focusedCamp.Minions.All(min => min == null || min.Dead))
-                return true;
-            return false;
+            return FocusedCamp.State == JungleCampState.Dead && FocusedCamp.Minions.All(min => min == null || min.Dead);
             // return focusedCamp.Minions.All(min => min == null || min.Dead);
         }
 
-        public static void doWhileIdling()
+        public static void DoWhileIdling()
         {
-            jungler.doWhileRunningIdlin();
+            Jungler.DoWhileRunningIdlin();
         }
+
         /*
          *  is buff +5
          *  is in way of needed buff +5
@@ -345,110 +350,140 @@ namespace HypaJungle
          * 
          */
 
-        public static JungleCamp getBestCampToGo()
+        public static JungleCamp GetBestCampToGo()
         {
-            int minPriority = getPriorityNumber(HypaJungle.jTimer._jungleCamps.First());
+            var minPriority = GetPriorityNumber(Enumerable.First(HypaJungle.JTimer.JungleCamps));
             JungleCamp bestCamp = null;
-            foreach (var jungleCamp in HypaJungle.jTimer._jungleCamps)
+            foreach (var jungleCamp in HypaJungle.JTimer.JungleCamps)
             {
-                if(skipCamp != null && skipCamp.campId == jungleCamp.campId)
+                if (SkipCamp != null && SkipCamp.CampId == jungleCamp.CampId)
+                {
                     continue;
-                int piro = getPriorityNumber(jungleCamp);
-                if (minPriority > piro)
-                {                   
-                    bestCamp = jungleCamp;
-                    minPriority = piro;
                 }
+
+                var piro = GetPriorityNumber(jungleCamp);
+                if (minPriority <= piro)
+                {
+                    continue;
+                }
+
+                bestCamp = jungleCamp;
+                minPriority = piro;
             }
-            skipCamp = null;
+            SkipCamp = null;
             return bestCamp;
         }
 
-        public static int getPriorityNumber(JungleCamp camp)
+        public static int GetPriorityNumber(JungleCamp camp)
         {
-            if (camp.isDragBaron)
+            if (camp.IsDragBaron)
+            {
                 return 999;
+            }
 
-            if (((camp.team == 0 && HypaJungle.player.Team == GameObjectTeam.Chaos)
-                || (camp.team == 1 && HypaJungle.player.Team == GameObjectTeam.Order)) && !HypaJungle.Config.Item("enemyJung").GetValue<bool>())
+            if (((camp.Team == 0 && HypaJungle.Player.Team == GameObjectTeam.Chaos)
+                 || (camp.Team == 1 && HypaJungle.Player.Team == GameObjectTeam.Order)) &&
+                !HypaJungle.Config.Item("enemyJung").GetValue<bool>())
+            {
                 return 999;
+            }
 
-            if (camp.team == 3 && !HypaJungle.Config.Item("doCrabs").GetValue<bool>())
+            if (camp.Team == 3 && !HypaJungle.Config.Item("doCrabs").GetValue<bool>())
+            {
                 return 999;
+            }
 
-            int priority = 0;
+            var priority = 0;
 
-            var distTillCamp = getPathLenght(HypaJungle.player.GetPath(camp.Position));
-            var timeToCamp = distTillCamp / HypaJungle.player.MoveSpeed;
-            var spawnTime = (Game.Time < camp.SpawnTime.TotalSeconds) ? camp.SpawnTime.TotalSeconds : camp.RespawnTimer.TotalSeconds;
+            var distTillCamp = GetPathLenght(HypaJungle.Player.GetPath(camp.Position));
+            var timeToCamp = distTillCamp/HypaJungle.Player.MoveSpeed;
+            var spawnTime = (Game.Time < camp.SpawnTime.TotalSeconds)
+                ? camp.SpawnTime.TotalSeconds
+                : camp.RespawnTimer.TotalSeconds;
 
-            float revOn = camp.ClearTick + (float)spawnTime;
-            float timeTillSpawn = (camp.State == JungleCampState.Dead)?((revOn - Game.Time > 0) ? (revOn - Game.Time) : 0):0;
+            var revOn = camp.ClearTick + (float) spawnTime;
+            var timeTillSpawn = (camp.State == JungleCampState.Dead)
+                ? ((revOn - Game.Time > 0) ? (revOn - Game.Time) : 0)
+                : 0;
 
-            camp.willKillMe = false;
-            if (!jungler.canKill(camp, timeToCamp) && HypaJungle.Config.Item("checkKillability").GetValue<bool>())
+            camp.WillKillMe = false;
+            if (!Jungler.CanKill(camp, timeToCamp) && HypaJungle.Config.Item("checkKillability").GetValue<bool>())
             {
                 priority += 999;
-                camp.willKillMe = true;
+                camp.WillKillMe = true;
             }
-            priority -= camp.bonusPrio;
-            priority += (int)timeToCamp;
+            priority -= camp.BonusPrio;
+            priority += (int) timeToCamp;
             priority += (int) timeTillSpawn;
-            priority -= (camp.isBuff) ? jungler.buffPriority : 0;
+            priority -= (camp.IsBuff) ? Jungler.BuffPriority : 0;
             //priority -= (int)(timeTillSpawn - timeToCamp);
             //alive on come is better ;)
             //Priority focus!!
-            if (player.Level <= 3)
+            if (Player.Level <= 3)
             {
-                if ((camp.campId == 10 || camp.campId == 4) & jungler.startCamp == Jungler.StartCamp.Red)
+                if ((camp.CampId == 10 || camp.CampId == 4) & Jungler.startCamp == Jungler.StartCamp.Red)
+                {
                     priority -= 5;
-                if ((camp.campId == 1 || camp.campId == 7) & jungler.startCamp == Jungler.StartCamp.Blue)
+                }
+
+                if ((camp.CampId == 1 || camp.CampId == 7) & Jungler.startCamp == Jungler.StartCamp.Blue)
+                {
                     priority -= 5;
-                if ((camp.campId == 11 || camp.campId == 5) & jungler.startCamp == Jungler.StartCamp.Golems)
+                }
+
+                if ((camp.CampId == 11 || camp.CampId == 5) & Jungler.startCamp == Jungler.StartCamp.Golems)
+                {
                     priority -= 5;
-                if ((camp.campId == 14 || camp.campId == 13) & jungler.startCamp == Jungler.StartCamp.Frog)
+                }
+
+                if ((camp.CampId == 14 || camp.CampId == 13) & Jungler.startCamp == Jungler.StartCamp.Frog)
+                {
                     priority -= 5;
+                }
             }
 
 
-            camp.priority = priority;
-            camp.timeToCamp = timeToCamp;
+            camp.Priority = priority;
+            camp.TimeToCamp = timeToCamp;
 
             //if(!camp.isBuff)
-              //  priority -= (isInBuffWay(camp)) ? 10 : 0;
+            //  priority -= (isInBuffWay(camp)) ? 10 : 0;
 
             return priority;
         }
 
-        public static bool isInBuffWay(JungleCamp camp)
+        public static bool IsInBuffWay(JungleCamp camp)
         {
-            
-            JungleCamp bestBuff = getBestBuffCamp();
+            var bestBuff = GetBestBuffCamp();
             if (bestBuff == null)
+            {
                 return false;
-            float distTobuff = bestBuff.Position.Distance(HypaJungle.player.Position,true);
-            float distToCamp = camp.Position.Distance(HypaJungle.player.Position,true);
-            float distCampToBuff = camp.Position.Distance(bestBuff.Position,true);
-            if (distTobuff > distToCamp + 800 && distTobuff > distCampToBuff)
-                return true;
-            return false;
+            }
 
+            var distTobuff = bestBuff.Position.Distance(HypaJungle.Player.Position, true);
+            var distToCamp = camp.Position.Distance(HypaJungle.Player.Position, true);
+            var distCampToBuff = camp.Position.Distance(bestBuff.Position, true);
+            return distTobuff > distToCamp + 800 && distTobuff > distCampToBuff;
         }
 
-        public static JungleCamp getBestBuffCamp()
+        public static JungleCamp GetBestBuffCamp()
         {
-            if (HypaJungle.jTimer._jungleCamps.Where(cp => cp.isBuff).Count() == 0)
+            if (!Enumerable.Any(HypaJungle.JTimer.JungleCamps, cp => cp.IsBuff))
+            {
                 return null;
+            }
 
-            JungleCamp bestCamp = HypaJungle.jTimer._jungleCamps.Where(cp => cp.isBuff).OrderByDescending(cp => getPriorityNumber(cp)).First();
+            var bestCamp =
+                Enumerable.Where(HypaJungle.JTimer.JungleCamps, cp => cp.IsBuff)
+                    .OrderByDescending(GetPriorityNumber)
+                    .First();
             return bestCamp;
         }
 
-
-        public static float getPathLenght(Vector3[] vecs)
+        public static float GetPathLenght(Vector3[] vecs)
         {
             float dist = 0;
-            Vector3 from = vecs[0];
+            var from = vecs[0];
             foreach (var vec in vecs)
             {
                 dist += Vector3.Distance(from, vec);
@@ -456,6 +491,5 @@ namespace HypaJungle
             }
             return dist;
         }
-
     }
 }
