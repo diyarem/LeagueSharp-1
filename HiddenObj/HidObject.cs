@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace HiddenObj
 {
-    class HidObject
+    internal class HidObject
     {
-        public string Name;
-        public string SkinName;
         public int Duration;
+        public string Name;
         public Color ObjColor;
         public int Range;
+        public string SkinName;
 
-        public HidObject(string name,string skinName, int duration, Color objColor, int range)
+        public HidObject(string name, string skinName, int duration, Color objColor, int range)
         {
             Name = name;
             SkinName = skinName;

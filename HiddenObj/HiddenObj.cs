@@ -1,89 +1,84 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using System.Threading;
 using LeagueSharp;
 using LeagueSharp.Common;
-using System.Drawing;
-using SharpDX;
-using System.Net;
+
 namespace HiddenObj
 {
     internal class HiddenObj
     {
-
-
-
-        public static List<ListedHO> allObjects = new List<ListedHO>();
+        public static List<ListedHO> AllObjects = new List<ListedHO>();
 
         public HiddenObj()
         {
-            CustomEvents.Game.OnGameLoad += onLoad;
-            GameObject.OnCreate += OnCreateObject;
-            GameObject.OnDelete += OnDeleteObject;
-            Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
-            Drawing.OnDraw += onDraw;
+            CustomEvents.Game.OnGameLoad += delegate
+            {
+                var onGameLoad = new Thread(Game_OnGameLoad);
+                onGameLoad.Start();
+            };
+
+            GameObject.OnCreate += GameObject_OnCreate;
+            GameObject.OnDelete += GameObject_OnDelete;
+            Drawing.OnDraw += Drawing_OnDraw;
         }
 
-        public static void OnProcessSpell(LeagueSharp.Obj_AI_Base obj, LeagueSharp.GameObjectProcessSpellCastEventArgs arg)
-        {
-           // if (obj.Name.Contains("Turret") || obj.Name.Contains("Minion"))
-           //     return;
-           // Console.WriteLine(obj.BasicAttack.Name+" -:- "+obj.SkinName);
-        }
-
-
-
-        private static void OnCreateObject(GameObject sender, EventArgs args)
+        private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         {
             if (sender.Name.Contains("missile") || sender.Name.Contains("Minion"))
+            {
                 return;
+            }
 
-            Obj_AI_Base objis = ObjectManager.GetUnitByNetworkId<Obj_AI_Base>(sender.NetworkId);
+            var objis = ObjectManager.GetUnitByNetworkId<Obj_AI_Base>(sender.NetworkId);
             //Console.WriteLine(sender.Name+" - "+objis.SkinName);
             //Console.WriteLine(sender.Name + " - " + sender.Type + " - " + sender.Flags);
-            HidObject ho = HidObjects.IsHidObj(objis.SkinName);
+            var ho = HidObjects.IsHidObj(objis.SkinName);
             if (ho != null)
             {
-                allObjects.Add(new ListedHO(sender.NetworkId,sender.Name,ho.Duration,ho.ObjColor,ho.Range,sender.Position,Game.Time));
+                AllObjects.Add(new ListedHO(sender.NetworkId, sender.Name, ho.Duration, ho.ObjColor, ho.Range,
+                    sender.Position, Game.Time));
             }
         }
 
-        private static void OnDeleteObject(GameObject sender, EventArgs args)
+        private static void GameObject_OnDelete(GameObject sender, EventArgs args)
         {
-            int i=0;
-            foreach (var lho in allObjects)
+            var i = 0;
+            foreach (var lho in AllObjects)
             {
                 if (lho.NetworkId == sender.NetworkId)
                 {
-                    allObjects.RemoveAt(i);
+                    AllObjects.RemoveAt(i);
                     return;
                 }
                 i++;
             }
         }
 
-        private static void onLoad(EventArgs args)
+        private static void Game_OnGameLoad()
         {
             Game.PrintChat("Hidden Objects 0.1 by DeTuKs");
-		}
+        }
 
-        private static void onDraw(EventArgs args)
+        private static void Drawing_OnDraw(EventArgs args)
         {
             //Utility.DrawCircle(ObjectManager.Player.Position, 500, System.Drawing.Color.FromArgb(255, 186, 201, 46));
             //Drawing.DrawText(ObjectManager.Player.Position.X, ObjectManager.Player.Position.Z, Color.FromArgb(255, 0, 0, 0), "awdawawd");
-            foreach (var lho in allObjects)
+            foreach (
+                var lho in
+                    AllObjects.Where(
+                        lho => lho.Duration == -1 || (int) ((lho.CreatedAt + lho.Duration + 1) - Game.Time) > 0))
             {
-                if (lho.Duration == -1 || (int)((lho.CreatedAt + lho.Duration + 1) - Game.Time) > 0)
+                Utility.DrawCircle(lho.Position, 50, lho.ObjColor);
+                if (lho.Duration <= 0)
                 {
-                    Utility.DrawCircle(lho.Position, 50, lho.ObjColor);
-                    if (lho.Duration > 0)
-                    {
-                        Vector2 locOnScreen = Drawing.WorldToScreen(lho.Position);
-                        Drawing.DrawText(locOnScreen.X - 10, locOnScreen.Y - 10, lho.ObjColor, "" + (int)((lho.CreatedAt + lho.Duration + 1) - Game.Time));
-                    }
+                    continue;
                 }
+
+                var locOnScreen = Drawing.WorldToScreen(lho.Position);
+                Drawing.DrawText(locOnScreen.X - 10, locOnScreen.Y - 10, lho.ObjColor,
+                    string.Empty + (int) ((lho.CreatedAt + lho.Duration + 1) - Game.Time));
             }
         }
     }
