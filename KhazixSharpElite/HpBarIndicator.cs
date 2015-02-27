@@ -1,75 +1,67 @@
-﻿
-using LeagueSharp;
+﻿using LeagueSharp;
 using SharpDX;
+using Color = System.Drawing.Color;
 
 namespace KhazixSharp
 {
-    class HpBarIndicator
+    internal class HpBarIndicator
     {
-
-        public Obj_AI_Hero unit { get; set; }
-
-        public float width = 104;
-
-        public float hight = 9;
-
+        public float Hight = 9;
+        public float Width = 104;
+        public Obj_AI_Hero Unit { get; set; }
 
         private Vector2 Offset
         {
             get
             {
-                if (unit != null)
+                if (Unit != null)
                 {
-                    return unit.IsAlly ? new Vector2(34, 9) : new Vector2(10, 20);
+                    return Unit.IsAlly ? new Vector2(34, 9) : new Vector2(10, 20);
                 }
 
                 return new Vector2();
             }
         }
 
-        public Vector2 startPosition
+        public Vector2 StartPosition
         {
-
-            get { return new Vector2(unit.HPBarPosition.X + Offset.X, unit.HPBarPosition.Y + Offset.Y); }
+            get { return new Vector2(Unit.HPBarPosition.X + Offset.X, Unit.HPBarPosition.Y + Offset.Y); }
         }
 
-
-        private float getHpProc(float dmg = 0)
+        private float GetHpProc(float dmg = 0)
         {
-            float health = ((unit.Health - dmg) > 0) ? (unit.Health - dmg) : 0;
-            return (health / unit.MaxHealth);
+            var health = ((Unit.Health - dmg) > 0) ? (Unit.Health - dmg) : 0;
+            return (health/Unit.MaxHealth);
         }
 
-        private Vector2 getHpPosAfterDmg(float dmg)
+        private Vector2 GetHpPosAfterDmg(float dmg)
         {
-            float w = getHpProc(dmg) * width;
-            return new Vector2(startPosition.X + w, startPosition.Y);
+            var w = GetHpProc(dmg)*Width;
+            return new Vector2(StartPosition.X + w, StartPosition.Y);
         }
 
-        public void drawDmg(float dmg, System.Drawing.Color color)
+        public void DrawDmg(float dmg, Color color)
         {
-            var hpPosNow = getHpPosAfterDmg(0);
-            var hpPosAfter = getHpPosAfterDmg(dmg);
+            var hpPosNow = GetHpPosAfterDmg(0);
+            var hpPosAfter = GetHpPosAfterDmg(dmg);
 
-            fillHPBar(hpPosNow, hpPosAfter, color);
-            //fillHPBar((int)(hpPosNow.X - startPosition.X), (int)(hpPosAfter.X- startPosition.X), color);
+            FillHpBar(hpPosNow, hpPosAfter, color);
+            // FillHpBar((int)(hpPosNow.X - startPosition.X), (int)(hpPosAfter.X- startPosition.X), color);
         }
 
-        private void fillHPBar(int to, int from, System.Drawing.Color color)
+        private void FillpPBar(int to, int from, Color color)
         {
-            Vector2 sPos = startPosition;
+            var sPos = StartPosition;
 
-            for (int i = from; i < to; i++)
+            for (var i = from; i < to; i++)
             {
                 Drawing.DrawLine(sPos.X + i, sPos.Y, sPos.X + i, sPos.Y + 9, 1, color);
             }
         }
 
-        private void fillHPBar(Vector2 from, Vector2 to, System.Drawing.Color color)
+        private static void FillHpBar(Vector2 from, Vector2 to, Color color)
         {
-            Vector2 sPos = startPosition;
-            Drawing.DrawLine((int)from.X, (int)from.Y + 9f, (int)to.X, (int)to.Y + 9f, 9f, color);
+            Drawing.DrawLine((int) from.X, (int) from.Y + 9f, (int) to.X, (int) to.Y + 9f, 9f, color);
         }
-
     }
 }

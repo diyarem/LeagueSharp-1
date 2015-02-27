@@ -1,1 +1,12 @@
 D:\Davide\Documenti\GitHub\LeagueSharp-1\JayceSharp\bin\Debug\JayceSharp.exe.config
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\JayceSharp.exe.config
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\JayceSharp.exe
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\JayceSharp.pdb
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\LeagueSharp.Common.dll
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\LeagueSharp.dll
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\SharpDX.dll
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\SharpDX.Direct3D9.dll
+C:\Users\Adrian\Desktop\detuks\JayceSharp\bin\Debug\LeagueSharp.xml
+C:\Users\Adrian\Desktop\detuks\JayceSharp\obj\Debug\JayceSharp.csprojResolveAssemblyReference.cache
+C:\Users\Adrian\Desktop\detuks\JayceSharp\obj\Debug\JayceSharp.exe
+C:\Users\Adrian\Desktop\detuks\JayceSharp\obj\Debug\JayceSharp.pdb

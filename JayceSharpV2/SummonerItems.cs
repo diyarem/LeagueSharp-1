@@ -1,19 +1,12 @@
 ﻿using System.Linq;
-
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
 
 namespace JayceSharpV2
 {
-    class SummonerItems
+    internal class SummonerItems
     {
-        private Obj_AI_Hero player;
-        private Spellbook sumBook;
-        private SpellSlot ignite;
-        private SpellSlot smite;
-
-
         public enum ItemIds
         {
             //MuramanaDe = 3043,
@@ -22,59 +15,73 @@ namespace JayceSharpV2
             Hydra = 3074,
             MercScim = 3139,
             Hextech = 3146,
-            SwordOD = 3131,
+            SwordOd = 3131,
             Ghostblade = 3142,
-            BotRK = 3153,
+            BotRk = 3153,
             Cutlass = 3144,
-            
+
             Omen = 3143
         }
 
+        private readonly SpellSlot _ignite;
+        private readonly Obj_AI_Hero _player;
+        private readonly SpellSlot _smite;
+        private readonly Spellbook _sumBook;
+
         public SummonerItems(Obj_AI_Hero myHero)
         {
-            player = myHero;
-            sumBook = player.Spellbook;
-            ignite = player.GetSpellSlot("summonerdot");
-            smite = player.GetSpellSlot("SummonerSmite");
+            _player = myHero;
+            _sumBook = _player.Spellbook;
+            _ignite = _player.GetSpellSlot("summonerdot");
+            _smite = _player.GetSpellSlot("SummonerSmite");
         }
 
-        public void castIgnite(Obj_AI_Hero target)
+        public void CastIgnite(Obj_AI_Hero target)
         {
-            if (ignite != SpellSlot.Unknown && sumBook.CanUseSpell(ignite) == SpellState.Ready)
-                sumBook.CastSpell(ignite, target);
+            if (_ignite != SpellSlot.Unknown && _sumBook.CanUseSpell(_ignite) == SpellState.Ready)
+            {
+                _sumBook.CastSpell(_ignite, target);
+            }
         }
 
-        public void castSmite(Obj_AI_Hero target)
+        public void CastSmite(Obj_AI_Hero target)
         {
-            if (smite != SpellSlot.Unknown && sumBook.CanUseSpell(smite) == SpellState.Ready)
-                sumBook.CastSpell(smite, target);
+            if (_smite != SpellSlot.Unknown && _sumBook.CanUseSpell(_smite) == SpellState.Ready)
+            {
+                _sumBook.CastSpell(_smite, target);
+            }
         }
 
         public void cast(ItemIds item)
         {
-            var itemId = (int)item;
+            var itemId = (int) item;
             if (Items.CanUseItem(itemId))
+            {
                 Items.UseItem(itemId);
+            }
         }
 
         public void cast(ItemIds item, Vector3 target)
         {
-            var itemId = (int)item;
+            var itemId = (int) item;
             if (Items.CanUseItem(itemId))
-               player.Spellbook.CastSpell(getInvSlot(itemId).SpellSlot,target);
-
+            {
+                _player.Spellbook.CastSpell(GetInvSlot(itemId).SpellSlot, target);
+            }
         }
 
         public void cast(ItemIds item, Obj_AI_Base target)
         {
-            var itemId = (int)item;
+            var itemId = (int) item;
             if (Items.CanUseItem(itemId))
+            {
                 Items.UseItem(itemId, target);
+            }
         }
 
-        private InventorySlot getInvSlot(int id)
+        private InventorySlot GetInvSlot(int id)
         {
-            return player.InventoryItems.FirstOrDefault(iSlot => (int)iSlot.Id == id);
+            return _player.InventoryItems.FirstOrDefault(iSlot => (int) iSlot.Id == id);
         }
     }
 }
