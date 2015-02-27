@@ -26,7 +26,7 @@ using SharpDX;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     internal static class SkillshotDetector
     {
@@ -34,12 +34,12 @@ namespace MasterSharp
 
         public delegate void OnDetectSkillshotH(Skillshot skillshot);
 
-        public static List<Skillshot> detectedSkillShots = new List<Skillshot>(); 
+        public static List<Skillshot> DetectedSkillShots = new List<Skillshot>();
 
         static SkillshotDetector()
         {
-            //Detect when the skillshots are created.
-            Game.OnGameProcessPacket += GameOnOnGameProcessPacket; // Used only for viktor's Laser :^)
+            // Detect when the skillshots are created.
+            Game.OnGameProcessPacket += GameOnOnGameProcessPacket; // Used only for Viktor's Laser :^)
             Obj_AI_Base.OnProcessSpellCast += ObjAiHeroOnOnProcessSpellCast;
 
             //Detect when projectiles collide.
@@ -47,21 +47,6 @@ namespace MasterSharp
             GameObject.OnCreate += ObjSpellMissileOnOnCreate;
             //GameObject.OnCreate += GameObject_OnCreate; //TODO: Detect lux R and other large skillshots.
             GameObject.OnDelete += GameObject_OnDelete;
-
-        }
-
-        private static void Game_OnWndProc(WndEventArgs args)
-        {
-            if (args.Msg == (uint) WindowsMessages.WM_KEYUP)
-            {
-                TriggerOnDetectSkillshot(
-                    DetectionType.ProcessSpell, SpellDatabase.GetByName("TestSkillShot"), Environment.TickCount,
-                    ObjectManager.Player.ServerPosition.To2D(), Game.CursorPos.To2D(), ObjectManager.Player);
-            }
-        }
-
-        private static void GameObject_OnCreate(GameObject sender, EventArgs args)
-        {
         }
 
         private static void GameObject_OnDelete(GameObject sender, EventArgs args)
@@ -71,13 +56,13 @@ namespace MasterSharp
                 return;
             }
 
-            for (var i = detectedSkillShots.Count - 1; i >= 0; i--)
+            for (var i = DetectedSkillShots.Count - 1; i >= 0; i--)
             {
-                var skillshot = detectedSkillShots[i];
-                if (skillshot.SpellData.ToggleParticleName != "" &&
+                var skillshot = DetectedSkillShots[i];
+                if (skillshot.SpellData.ToggleParticleName != string.Empty &&
                     sender.Name.Contains(skillshot.SpellData.ToggleParticleName))
                 {
-                    detectedSkillShots.RemoveAt(i);
+                    DetectedSkillShots.RemoveAt(i);
                 }
             }
         }
@@ -86,7 +71,7 @@ namespace MasterSharp
         {
             if (!sender.IsValid || !(sender is Obj_SpellMissile))
             {
-                return; //not sure if needed
+                return; // Not sure if needed
             }
 
             var missile = (Obj_SpellMissile) sender;
@@ -114,11 +99,12 @@ namespace MasterSharp
             {
                 return;
             }
+
             var missilePosition = missile.Position.To2D();
             var unitPosition = missile.StartPosition.To2D();
             var endPos = missile.EndPosition.To2D();
 
-            //Calculate the real end Point:
+            // Calculate the real end Point:
             var direction = (endPos - unitPosition).Normalized();
             if (unitPosition.Distance(endPos) > spellData.Range || spellData.FixedRange)
             {
@@ -134,7 +120,7 @@ namespace MasterSharp
             var castTime = Environment.TickCount - Game.Ping/2 - (spellData.MissileDelayed ? 0 : spellData.Delay) -
                            (int) (1000*missilePosition.Distance(unitPosition)/spellData.MissileSpeed);
 
-            //Trigger the skillshot detection callbacks.
+            // Trigger the skillshot detection callbacks.
             TriggerOnDetectSkillshot(DetectionType.RecvPacket, spellData, castTime, unitPosition, endPos, unit);
         }
 
@@ -149,7 +135,6 @@ namespace MasterSharp
             }
 
             var missile = (Obj_SpellMissile) sender;
-
             if (!(missile.SpellCaster is Obj_AI_Hero))
             {
                 return;
@@ -165,16 +150,17 @@ namespace MasterSharp
 
             if (OnDeleteMissile != null)
             {
-                foreach (var skillshot in detectedSkillShots)
+                foreach (
+                    var skillshot in
+                        DetectedSkillShots.Where(skillshot => skillshot.SpellData.MissileSpellName == spellName &&
+                                                              (skillshot.Unit.NetworkId == unit.NetworkId &&
+                                                               (missile.EndPosition.To2D() -
+                                                                missile.StartPosition.To2D()).AngleBetween(
+                                                                    skillshot.Direction) <
+                                                               10) && skillshot.SpellData.CanBeRemoved))
                 {
-                    if (skillshot.SpellData.MissileSpellName == spellName &&
-                        (skillshot.Unit.NetworkId == unit.NetworkId &&
-                         (missile.EndPosition.To2D() - missile.StartPosition.To2D()).AngleBetween(skillshot.Direction) <
-                         10) && skillshot.SpellData.CanBeRemoved)
-                    {
-                        OnDeleteMissile(skillshot, missile);
-                        break;
-                    }
+                    OnDeleteMissile(skillshot, missile);
+                    break;
                 }
             }
 
@@ -183,7 +169,7 @@ namespace MasterSharp
                 "Missile deleted: " + missile.SData.Name + " D: " + missile.EndPosition.Distance(missile.Position));
 #endif
 
-            detectedSkillShots.RemoveAll(
+            DetectedSkillShots.RemoveAll(
                 skillshot =>
                     (skillshot.SpellData.MissileSpellName == spellName ||
                      skillshot.SpellData.ExtraMissileNames.Contains(spellName)) &&
@@ -201,7 +187,6 @@ namespace MasterSharp
         ///     This event is fired after a skillshot missile collides.
         /// </summary>
         public static event OnDeleteMissileH OnDeleteMissile;
-
 
         private static void TriggerOnDetectSkillshot(DetectionType detectionType,
             SpellData spellData,
@@ -225,7 +210,7 @@ namespace MasterSharp
         {
             if (args.SData.Name == "dravenrdoublecast")
             {
-                detectedSkillShots.RemoveAll(
+                DetectedSkillShots.RemoveAll(
                     s => s.Unit.NetworkId == sender.NetworkId && s.SpellData.SpellName == "DravenRCast");
             }
 
@@ -233,25 +218,22 @@ namespace MasterSharp
             {
                 return;
             }
-            //Get the skillshot data.
+
+            // Get the skillshot data.
             var spellData = SpellDatabase.GetByName(args.SData.Name);
 
-            //Skillshot not added in the database.
+            // Skillshot not added in the database.
             if (spellData == null)
             {
                 return;
             }
 
             var startPos = new Vector2();
-
-            if (spellData.FromObject != "")
+            if (spellData.FromObject != string.Empty)
             {
-                foreach (var o in ObjectManager.Get<GameObject>())
+                foreach (var o in ObjectManager.Get<GameObject>().Where(o => o.Name.Contains(spellData.FromObject)))
                 {
-                    if (o.Name.Contains(spellData.FromObject))
-                    {
-                        startPos = o.Position.To2D();
-                    }
+                    startPos = o.Position.To2D();
                 }
             }
             else
@@ -259,19 +241,21 @@ namespace MasterSharp
                 startPos = sender.ServerPosition.To2D();
             }
 
-            //For now only zed support.
+            // For now only zed support.
             if (spellData.FromObjects != null && spellData.FromObjects.Length > 0)
             {
                 foreach (var obj in ObjectManager.Get<GameObject>())
                 {
-                    if (obj.IsEnemy && spellData.FromObjects.Contains(obj.Name))
+                    if (!obj.IsEnemy || !spellData.FromObjects.Contains(obj.Name))
                     {
-                        var start = obj.Position.To2D();
-                        var end = start + spellData.Range*(args.End.To2D() - obj.Position.To2D()).Normalized();
-                        TriggerOnDetectSkillshot(
-                            DetectionType.ProcessSpell, spellData, Environment.TickCount - Game.Ping/2, start, end,
-                            sender);
+                        continue;
                     }
+
+                    var start = obj.Position.To2D();
+                    var end = start + spellData.Range*(args.End.To2D() - obj.Position.To2D()).Normalized();
+                    TriggerOnDetectSkillshot(
+                        DetectionType.ProcessSpell, spellData, Environment.TickCount - Game.Ping/2, start, end,
+                        sender);
                 }
             }
 
@@ -288,7 +272,7 @@ namespace MasterSharp
                 return;
             }
 
-            //Calculate the real end Point:
+            // Calculate the real end Point:
             var direction = (endPos - startPos).Normalized();
             if (startPos.Distance(endPos) > spellData.Range || spellData.FixedRange)
             {
@@ -301,8 +285,7 @@ namespace MasterSharp
                          Math.Min(spellData.ExtraRange, spellData.Range - endPos.Distance(startPos))*direction;
             }
 
-
-            //Trigger the skillshot detection callbacks.
+            // Trigger the skillshot detection callbacks.
             TriggerOnDetectSkillshot(
                 DetectionType.ProcessSpell, spellData, Environment.TickCount - Game.Ping/2, startPos, endPos, sender);
         }
@@ -312,56 +295,57 @@ namespace MasterSharp
         /// </summary>
         public static void GameOnOnGameProcessPacket(GamePacketEventArgs args)
         {
-            //Gets received when a projectile is created.
-            if (args.PacketData[0] == 0x3B)
+            // Gets received when a projectile is created.
+            if (args.PacketData[0] != 0x3B)
             {
-                var packet = new GamePacket(args.PacketData);
-
-                packet.Position = 1;
-
-                packet.ReadFloat(); //Missile network ID
-
-                var missilePosition = new Vector3(packet.ReadFloat(), packet.ReadFloat(), packet.ReadFloat());
-                var unitPosition = new Vector3(packet.ReadFloat(), packet.ReadFloat(), packet.ReadFloat());
-
-                packet.Position = packet.Size() - 119;
-                var missileSpeed = packet.ReadFloat();
-
-                packet.Position = 65;
-                var endPos = new Vector3(packet.ReadFloat(), packet.ReadFloat(), packet.ReadFloat());
-
-                packet.Position = 112;
-                var id = packet.ReadByte();
-
-
-                packet.Position = packet.Size() - 83;
-
-                var unit = ObjectManager.GetUnitByNetworkId<Obj_AI_Hero>(packet.ReadInteger());
-                if ((!unit.IsValid || unit.Team == ObjectManager.Player.Team))
-                {
-                    return;
-                }
-
-                var spellData = SpellDatabase.GetBySpeed(unit.ChampionName, (int) missileSpeed, id);
-
-                if (spellData == null)
-                {
-                    return;
-                }
-                if (spellData.SpellName != "Laser")
-                {
-                    return;
-                }
-                var castTime = Environment.TickCount - Game.Ping/2 - spellData.Delay -
-                               (int)
-                                   (1000*missilePosition.SwitchYZ().To2D().Distance(unitPosition.SwitchYZ())/
-                                    spellData.MissileSpeed);
-
-                //Trigger the skillshot detection callbacks.
-                TriggerOnDetectSkillshot(
-                    DetectionType.RecvPacket, spellData, castTime, unitPosition.SwitchYZ().To2D(),
-                    endPos.SwitchYZ().To2D(), unit);
+                return;
             }
+
+            var packet = new GamePacket(args.PacketData) {Position = 1};
+
+
+            packet.ReadFloat(); // Missile network ID
+
+            var missilePosition = new Vector3(packet.ReadFloat(), packet.ReadFloat(), packet.ReadFloat());
+            var unitPosition = new Vector3(packet.ReadFloat(), packet.ReadFloat(), packet.ReadFloat());
+
+            packet.Position = packet.Size() - 119;
+            var missileSpeed = packet.ReadFloat();
+
+            packet.Position = 65;
+            var endPos = new Vector3(packet.ReadFloat(), packet.ReadFloat(), packet.ReadFloat());
+
+            packet.Position = 112;
+            var id = packet.ReadByte();
+
+
+            packet.Position = packet.Size() - 83;
+
+            var unit = ObjectManager.GetUnitByNetworkId<Obj_AI_Hero>(packet.ReadInteger());
+            if ((!unit.IsValid || unit.Team == ObjectManager.Player.Team))
+            {
+                return;
+            }
+
+            var spellData = SpellDatabase.GetBySpeed(unit.ChampionName, (int) missileSpeed, id);
+            if (spellData == null)
+            {
+                return;
+            }
+
+            if (spellData.SpellName != "Laser")
+            {
+                return;
+            }
+            var castTime = Environment.TickCount - Game.Ping/2 - spellData.Delay -
+                           (int)
+                               (1000*missilePosition.SwitchYz().To2D().Distance(unitPosition.SwitchYz())/
+                                spellData.MissileSpeed);
+
+            // Trigger the skillshot detection callbacks.
+            TriggerOnDetectSkillshot(
+                DetectionType.RecvPacket, spellData, castTime, unitPosition.SwitchYz().To2D(),
+                endPos.SwitchYz().To2D(), unit);
         }
     }
 }

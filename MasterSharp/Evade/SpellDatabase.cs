@@ -23,7 +23,7 @@ using LeagueSharp;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     public static class SpellDatabase
     {
@@ -3523,50 +3523,24 @@ namespace MasterSharp
 
             #endregion Zyra
 
-            //Game.PrintChat("Added " + Spells.Count + " spells.");
+            // Game.PrintChat("Added " + Spells.Count + " spells.");
         }
 
         public static SpellData GetByName(string spellName)
         {
             spellName = spellName.ToLower();
-            foreach (var spellData in Spells)
-            {
-                if (spellData.SpellName.ToLower() == spellName || spellData.ExtraSpellNames.Contains(spellName))
-                {
-                    return spellData;
-                }
-            }
-
-            return null;
+            return Spells.FirstOrDefault(spellData => spellData.SpellName.ToLower() == spellName || spellData.ExtraSpellNames.Contains(spellName));
         }
 
         public static SpellData GetByMissileName(string missileSpellName)
         {
             missileSpellName = missileSpellName.ToLower();
-            foreach (var spellData in Spells)
-            {
-                if (spellData.MissileSpellName != null && spellData.MissileSpellName.ToLower() == missileSpellName ||
-                    spellData.ExtraMissileNames.Contains(missileSpellName))
-                {
-                    return spellData;
-                }
-            }
-
-            return null;
+            return Spells.FirstOrDefault(spellData => spellData.MissileSpellName != null && spellData.MissileSpellName.ToLower() == missileSpellName || spellData.ExtraMissileNames.Contains(missileSpellName));
         }
 
-        public static SpellData GetBySpeed(string ChampionName, int speed, int id = -1)
+        public static SpellData GetBySpeed(string championName, int speed, int id = -1)
         {
-            foreach (var spellData in Spells)
-            {
-                if (spellData.ChampionName == ChampionName && spellData.MissileSpeed == speed &&
-                    (spellData.Id == -1 || id == spellData.Id))
-                {
-                    return spellData;
-                }
-            }
-
-            return null;
+            return Spells.FirstOrDefault(spellData => spellData.ChampionName == championName && spellData.MissileSpeed == speed && (spellData.Id == -1 || id == spellData.Id));
         }
     }
 }
