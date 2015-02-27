@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
-
+using System.Threading;
 using LeagueSharp;
 using LeagueSharp.Common;
+
 /*TODO
  * Combo calc and choose best <-- kinda
  * Farming
@@ -30,23 +28,15 @@ using LeagueSharp.Common;
  * R KS
  * 
  */
-using Rive;
-using SharpDX;
-using SharpDX.Direct3D9;
-using Color = System.Drawing.Color;
 
-namespace RivenSharp
+namespace RivenSharpV2
 {
-    class RivenSharp
+    internal class RivenSharp
     {
-
         public const string CharName = "Riven";
-
         public static Menu Config;
-
-
-        public static HpBarIndicator hpi = new HpBarIndicator();
-        
+        public static HpBarIndicator Hpi = new HpBarIndicator();
+        public static int LastTargetId = 0;
 
         public RivenSharp()
         {
@@ -56,69 +46,11 @@ namespace RivenSharp
                 // if (ObjectManager.Player.BaseSkinName != CharName)
                 //    return;
                 /* CallBAcks */
-                CustomEvents.Game.OnGameLoad += onLoad;
-            }
-            catch (Exception ex)
-            {
-               Console.WriteLine(ex.Message);
-            }
-
-        }
-
-        private static void onLoad(EventArgs args)
-        {
-            try
-            {
-                if (Riven.Player.ChampionName != "Riven") return;
-
-            Game.PrintChat("RivenSharp by DeTuKs");
-            Config = new Menu("Riven - Sharp", "Riven", true);
-            //Orbwalkervar menu = new Menu("My Mainmenu", "my_mainmenu", true);
-            var orbwalkerMenu = new Menu("LX Orbwalker", "my_Orbwalker");
-            LXOrbwalker.AddToMenu(orbwalkerMenu);
-            Config.AddSubMenu(orbwalkerMenu);
-           //TS
-           var TargetSelectorMenu = new Menu("Target Selector", "Target Selector");
-           TargetSelector.AddToMenu(TargetSelectorMenu);
-           Config.AddSubMenu(TargetSelectorMenu);
-            //Combo
-           Config.AddSubMenu(new Menu("Combo Sharp", "combo"));
-           Config.SubMenu("combo").AddItem(new MenuItem("useR", "Use R on combo (Shuld be on)")).SetValue(true);
-            Config.SubMenu("combo").AddItem(new MenuItem("forceQE", "Use Q after E")).SetValue(true);
-            Config.SubMenu("combo").AddItem(new MenuItem("packets", "Use packet cast")).SetValue(true);
-
-            //Haras
-            Config.AddSubMenu(new Menu("Harass Sharp", "haras"));
-            Config.SubMenu("haras").AddItem(new MenuItem("doHarasE", "Harass enemy E")).SetValue(new KeyBind('G', KeyBindType.Press, false));
-            Config.SubMenu("haras").AddItem(new MenuItem("doHarasQ", "Harass enemy Q")).SetValue(new KeyBind('T', KeyBindType.Press, false));
-
-            //Drawing
-            Config.AddSubMenu(new Menu("Drawing Sharp", "draw"));
-            Config.SubMenu("draw").AddItem(new MenuItem("doDraw", "Dissable drawings")).SetValue(false);
-            Config.SubMenu("draw").AddItem(new MenuItem("drawHp", "Draw pred hp")).SetValue(true);
-
-            //Debug
-            Config.AddSubMenu(new Menu("Debug", "debug"));
-            Config.SubMenu("debug").AddItem(new MenuItem("db_targ", "Debug Target")).SetValue(new KeyBind('0', KeyBindType.Press, false));
-
-            Config.AddToMainMenu();
-
-            Drawing.OnDraw += onDraw;
-            Drawing.OnEndScene += OnEndScene;
-            Game.OnGameUpdate += OnGameUpdate;
-
-            GameObject.OnCreate += OnCreateObject;
-            GameObject.OnDelete += OnDeleteObject;
-            GameObject.OnPropertyChange += OnPropertyChange;
-            Obj_AI_Base.OnProcessSpellCast += OnProcessSpell;
-            Obj_AI_Base.OnNewPath += OnNewPath;
-            Obj_AI_Base.OnPlayAnimation += OnPlayAnimation;
-
-            Game.OnGameSendPacket += OnGameSendPacket;
-            Game.OnGameProcessPacket += OnGameProcessPacket;
-
-            Riven.setSkillshots();
-
+                CustomEvents.Game.OnGameLoad += delegate
+                {
+                    var onGameLoad = new Thread(Game_OnGameLoad);
+                    onGameLoad.Start();
+                };
             }
             catch (Exception ex)
             {
@@ -126,42 +58,107 @@ namespace RivenSharp
             }
         }
 
-        private static void OnPlayAnimation(GameObject sender, GameObjectPlayAnimationEventArgs args)
+        private static void Game_OnGameLoad()
         {
-            if (sender.IsMe && args.Animation.Contains("Spell") && isComboing())
+            try
             {
-                Riven.cancelAnim();
+                if (Riven.Player.ChampionName != "Riven")
+                {
+                    return;
+                }
+
+                Game.PrintChat("RivenSharp by DeTuKs");
+                Config = new Menu("Riven - Sharp", "Riven", true);
+                // Orbwalkervar menu = new Menu("My Mainmenu", "my_mainmenu", true);
+                var orbwalkerMenu = new Menu("LX Orbwalker", "my_Orbwalker");
+                LxOrbwalker.AddToMenu(orbwalkerMenu);
+                Config.AddSubMenu(orbwalkerMenu);
+
+                //TS
+                var targetSelectorMenu = new Menu("Target Selector", "Target Selector");
+                TargetSelector.AddToMenu(targetSelectorMenu);
+                Config.AddSubMenu(targetSelectorMenu);
+
+                //Combo
+                Config.AddSubMenu(new Menu("Combo Sharp", "combo"));
+                Config.SubMenu("combo").AddItem(new MenuItem("useR", "Use R on combo (Shuld be on)")).SetValue(true);
+                Config.SubMenu("combo").AddItem(new MenuItem("forceQE", "Use Q after E")).SetValue(true);
+                Config.SubMenu("combo").AddItem(new MenuItem("packets", "Use packet cast")).SetValue(true);
+
+                //Haras
+                Config.AddSubMenu(new Menu("Harass Sharp", "haras"));
+                Config.SubMenu("haras")
+                    .AddItem(new MenuItem("doHarasE", "Harass enemy E"))
+                    .SetValue(new KeyBind('G', KeyBindType.Press));
+                Config.SubMenu("haras")
+                    .AddItem(new MenuItem("doHarasQ", "Harass enemy Q"))
+                    .SetValue(new KeyBind('T', KeyBindType.Press));
+
+                //Drawing
+                Config.AddSubMenu(new Menu("Drawing Sharp", "draw"));
+                Config.SubMenu("draw").AddItem(new MenuItem("doDraw", "Dissable drawings")).SetValue(false);
+                Config.SubMenu("draw").AddItem(new MenuItem("drawHp", "Draw pred hp")).SetValue(true);
+
+                //Debug
+                Config.AddSubMenu(new Menu("Debug", "debug"));
+                Config.SubMenu("debug")
+                    .AddItem(new MenuItem("db_targ", "Debug Target"))
+                    .SetValue(new KeyBind('0', KeyBindType.Press));
+
+                Config.AddToMainMenu();
+
+                Game.OnGameUpdate += Game_OnGameUpdate;
+                Game.OnGameSendPacket += Game_OnGameSendPacket;
+                Game.OnGameProcessPacket += Game_OnGameProcessPacket;
+
+                Drawing.OnDraw += Drawing_OnDraw;
+                Drawing.OnEndScene += Drawing_OnEndScene;
+
+                Obj_AI_Base.OnNewPath += Obj_AI_Base_OnNewPath;
+                Obj_AI_Base.OnPlayAnimation += Obj_AI_Base_OnPlayAnimation;
+
+                Riven.SetSkillshots();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
 
-        private static void OnNewPath(Obj_AI_Base sender, GameObjectNewPathEventArgs args)
+        private static void Obj_AI_Base_OnPlayAnimation(GameObject sender, GameObjectPlayAnimationEventArgs args)
+        {
+            if (sender.IsMe && args.Animation.Contains("Spell") && IsComboing())
+            {
+                Riven.CancelAnim();
+            }
+        }
+
+        private static void Obj_AI_Base_OnNewPath(Obj_AI_Base sender, GameObjectNewPathEventArgs args)
         {
             if (sender.IsMe)
             {
-                LXOrbwalker.ResetAutoAttackTimer();
+                LxOrbwalker.ResetAutoAttackTimer();
             }
         }
 
-        private static void OnEndScene(EventArgs args)
+        private static void Drawing_OnEndScene(EventArgs args)
         {
-            if (Config.Item("drawHp").GetValue<bool>())
+            if (!Config.Item("drawHp").GetValue<bool>())
             {
-                foreach (
-                    var enemy in
-                        ObjectManager.Get<Obj_AI_Hero>()
-                            .Where(ene => !ene.IsDead && ene.IsEnemy && ene.IsVisible))
-                {
-                    hpi.unit = enemy;
-                    hpi.drawDmg(Riven.rushDmgBasedOnDist(enemy), Color.Yellow);
+                return;
+            }
 
-                }
+            foreach (
+                var enemy in
+                    ObjectManager.Get<Obj_AI_Hero>()
+                        .Where(ene => !ene.IsDead && ene.IsEnemy && ene.IsVisible))
+            {
+                Hpi.Unit = enemy;
+                Hpi.DrawDmg(Riven.RushDmgBasedOnDist(enemy), Color.Yellow);
             }
         }
 
-        /*
-         * 
-         */
-        private static void OnGameUpdate(EventArgs args)
+        private static void Game_OnGameUpdate(EventArgs args)
         {
             /*
                 RivenFengShuiEngine
@@ -169,64 +166,63 @@ namespace RivenSharp
              */
             try
             {
-
                 if (Config.Item("doHarasE").GetValue<KeyBind>().Active)
                 {
-                    Obj_AI_Hero target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Physical);
-                    LXOrbwalker.ForcedTarget = target;
-                    Riven.doHarasE(target);
-                }else if (Config.Item("doHarasQ").GetValue<KeyBind>().Active)
+                    var target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Physical);
+                    LxOrbwalker.ForcedTarget = target;
+                    Riven.DoHarasE(target);
+                }
+                else if (Config.Item("doHarasQ").GetValue<KeyBind>().Active)
                 {
-                    Obj_AI_Hero target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Physical);
-                    LXOrbwalker.ForcedTarget = target;
-                    Riven.doHarasQ(target);
+                    var target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Physical);
+                    LxOrbwalker.ForcedTarget = target;
+                    Riven.DoHarasQ(target);
                 }
 
 
-                if (LXOrbwalker.CurrentMode == LXOrbwalker.Mode.Combo)
+                if (LxOrbwalker.CurrentMode == LxOrbwalker.Mode.Combo)
                 {
-                    Obj_AI_Hero target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Physical);
-                     LXOrbwalker.ForcedTarget = target;
-                     Riven.doCombo(target);
-                     //Console.WriteLine(target.NetworkId);
+                    var target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Physical);
+                    LxOrbwalker.ForcedTarget = target;
+                    Riven.DoCombo(target);
+                    //Console.WriteLine(target.NetworkId);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-               // Console.WriteLine(ex);
+                // Console.WriteLine(ex);
             }
         }
 
-
-        private static void onDraw(EventArgs args)
+        private static void Drawing_OnDraw(EventArgs args)
         {
             try
             {
-
-                if (!Config.Item("doDraw").GetValue<bool>())
+                if (Config.Item("doDraw").GetValue<bool>())
                 {
+                    return;
+                }
 
-                    if (Config.Item("drawHp").GetValue<bool>())
-                    {
-                        foreach (
-                            var enemy in
-                                ObjectManager.Get<Obj_AI_Hero>()
-                                    .Where(ene => !ene.IsDead && ene.IsEnemy && ene.IsVisible))
-                        {
-                            hpi.unit = enemy;
-                            hpi.drawDmg(Riven.rushDmgBasedOnDist(enemy), Color.Yellow);
-
-                        }
-                    }
+                if (Config.Item("drawHp").GetValue<bool>())
+                {
                     foreach (
-                        Obj_AI_Hero enHero in
-                            ObjectManager.Get<Obj_AI_Hero>().Where(enHero => enHero.IsEnemy && enHero.Health > 0))
+                        var enemy in
+                            ObjectManager.Get<Obj_AI_Hero>()
+                                .Where(ene => !ene.IsDead && ene.IsEnemy && ene.IsVisible))
                     {
-                        Utility.DrawCircle(enHero.Position,
-                            enHero.BoundingRadius + Riven.E.Range + Riven.Player.AttackRange,
-                            (Riven.rushDown) ? Color.Red : Color.Blue);
-                        //Drawing.DrawCircle(enHero.Position, enHero.BoundingRadius + Riven.E.Range+Riven.Player.AttackRange, Color.Blue);
+                        Hpi.Unit = enemy;
+                        Hpi.DrawDmg(Riven.RushDmgBasedOnDist(enemy), Color.Yellow);
                     }
+                }
+
+                foreach (
+                    var enHero in
+                        ObjectManager.Get<Obj_AI_Hero>().Where(enHero => enHero.IsEnemy && enHero.Health > 0))
+                {
+                    Utility.DrawCircle(enHero.Position,
+                        enHero.BoundingRadius + Riven.E.Range + Riven.Player.AttackRange,
+                        (Riven.RushDown) ? Color.Red : Color.Blue);
+                    // Drawing.DrawCircle(enHero.Position, enHero.BoundingRadius + Riven.E.Range+Riven.Player.AttackRange, Color.Blue);
                 }
             }
             catch (Exception ex)
@@ -235,138 +231,122 @@ namespace RivenSharp
             }
         }
 
-        private static void OnCreateObject(GameObject sender, EventArgs args)
+        public static bool IsComboing()
         {
-           // if (sender.Name.Contains("missile") || sender.Name.Contains("Minion"))
-           //     return;
-           // Console.WriteLine("Object: " + sender.Name);
+            return Config.Item("doHarasE").GetValue<KeyBind>().Active ||
+                   Config.Item("doHarasQ").GetValue<KeyBind>().Active
+                   || LxOrbwalker.CurrentMode == LxOrbwalker.Mode.Combo ||
+                   LxOrbwalker.CurrentMode == LxOrbwalker.Mode.LaneClear;
         }
 
-        private static void OnDeleteObject(GameObject sender, EventArgs args)
+        public static void Obj_AI_Base_OnProcessSpell(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs arg)
         {
-
-        }
-
-        public static bool isComboing()
-        {
-            if (Config.Item("doHarasE").GetValue<KeyBind>().Active ||
-                Config.Item("doHarasQ").GetValue<KeyBind>().Active
-                || LXOrbwalker.CurrentMode == LXOrbwalker.Mode.Combo || 
-                LXOrbwalker.CurrentMode == LXOrbwalker.Mode.LaneClear)
+            if (!Config.Item("forceQE").GetValue<bool>() || !sender.IsMe || !arg.SData.Name.Contains("RivenFeint") ||
+                !Riven.Q.IsReady() || LxOrbwalker.GetPossibleTarget() == null)
             {
-                return true;
+                return;
             }
 
-            return false;
+            Console.WriteLine("force q");
+            Riven.Q.Cast(LxOrbwalker.GetPossibleTarget().Position);
+            Riven.ForceQ = true;
+            // Riven.timer = new System.Threading.Timer(obj => { Riven.Player.IssueOrder(GameObjectOrder.MoveTo, Riven.difPos()); }, null, (long)100, System.Threading.Timeout.Infinite);
         }
 
-
-        public static void OnProcessSpell(LeagueSharp.Obj_AI_Base sender, LeagueSharp.GameObjectProcessSpellCastEventArgs arg)
-        {
-            if (Config.Item("forceQE").GetValue<bool>() && sender.IsMe && arg.SData.Name.Contains("RivenFeint") && Riven.Q.IsReady() && LXOrbwalker.GetPossibleTarget() != null)
-             {
-                Console.WriteLine("force q");
-                Riven.Q.Cast(LXOrbwalker.GetPossibleTarget().Position);
-                 Riven.forceQ = true;
-                 // Riven.timer = new System.Threading.Timer(obj => { Riven.Player.IssueOrder(GameObjectOrder.MoveTo, Riven.difPos()); }, null, (long)100, System.Threading.Timeout.Infinite);
-             }
-        }
-
-        public static void OnPropertyChange(LeagueSharp.GameObject obj, LeagueSharp.GameObjectPropertyChangeEventArgs prop)
-        {
-           // Console.WriteLine("obj: " + obj.Name + " - " + prop.NewValue);
-        }
-
-
-        public static int lastTargetId = 0;
-
-        public static void OnGameProcessPacket(GamePacketEventArgs args)
+        public static void Game_OnGameProcessPacket(GamePacketEventArgs args)
         {
             try
             {
-                
-
-                if (isComboing())
+                if (!IsComboing())
                 {
-                    if (args.PacketData[0] == 35 && Riven.Q.IsReady())
+                    return;
+                }
+
+                if (args.PacketData[0] == 35 && Riven.Q.IsReady())
+                {
+                    Console.WriteLine("Gott");
+                    var gp = new GamePacket(args.PacketData) {Position = 2};
+                    var netId = gp.ReadInteger();
+                    if (LxOrbwalker.GetPossibleTarget() == null ||
+                        LxOrbwalker.GetPossibleTarget().NetworkId != netId)
                     {
-                        Console.WriteLine("Gott");
-                        GamePacket gp = new GamePacket(args.PacketData);
-                        gp.Position = 2;
-                        int netId = gp.ReadInteger();
-                        if (LXOrbwalker.GetPossibleTarget() == null || LXOrbwalker.GetPossibleTarget().NetworkId != netId)
-                            return;
-                        if (!LXOrbwalker.CanAttack())
-                            Riven.Q.Cast(LXOrbwalker.GetPossibleTarget().Position);
+                        return;
                     }
 
-                    if (args.PacketData[0] == 0x17)
+                    if (!LxOrbwalker.CanAttack())
                     {
-                        Console.WriteLine("cancel");
+                        Riven.Q.Cast(LxOrbwalker.GetPossibleTarget().Position);
+                    }
+                }
 
-                        GamePacket packet = new GamePacket(args.PacketData);
-                        packet.Position = 2;
-                        int sourceId = packet.ReadInteger();
-                        if (sourceId == Riven.Player.NetworkId)
+                if (args.PacketData[0] == 0x17)
+                {
+                    Console.WriteLine("cancel");
+
+                    var packet = new GamePacket(args.PacketData) {Position = 2};
+                    var sourceId = packet.ReadInteger();
+                    if (sourceId == Riven.Player.NetworkId)
+                    {
+                        Console.WriteLine("cancel wawf");
+                        Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y))
+                            .Send();
+                        if (LxOrbwalker.GetPossibleTarget() != null)
                         {
-                            Console.WriteLine("cancel wawf");
-                            Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
-                            if (LXOrbwalker.GetPossibleTarget() != null)
-                            {
-                                Riven.moveTo(LXOrbwalker.GetPossibleTarget().Position);
-                                //Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(LXOrbwalker.GetPossibleTarget().Position.X, LXOrbwalker.GetPossibleTarget().Position.Y)).Send();
+                            Riven.MoveTo(LxOrbwalker.GetPossibleTarget().Position);
+                            //Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(LXOrbwalker.GetPossibleTarget().Position.X, LXOrbwalker.GetPossibleTarget().Position.Y)).Send();
 
-                                // LXOrbwalker.ResetAutoAttackTimer();
-                                Riven.cancelAnim(true);
-                            }
+                            // LXOrbwalker.ResetAutoAttackTimer();
+                            Riven.CancelAnim(true);
                         }
                     }
+                }
 
-                    if (args.PacketData[0] == 0xDF && false)
-                    {
+                if (args.PacketData[0] == 0xDF && false)
+                {
+                    Console.WriteLine("cancel");
 
-                        Console.WriteLine("cancel");
+                    var packet = new GamePacket(args.PacketData) {Position = 2};
+                    var sourceId = packet.ReadInteger();
+                    if (sourceId == Riven.Player.NetworkId)
+                    {
+                        Console.WriteLine("cancel wawf");
+                        Riven.MoveTo(Game.CursorPos);
+                        Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y))
+                            .Send();
+                        LxOrbwalker.ResetAutoAttackTimer();
+                        Riven.CancelAnim();
+                    }
+                }
 
-                        GamePacket packet = new GamePacket(args.PacketData);
-                        packet.Position = 2;
-                        int sourceId = packet.ReadInteger();
-                        if (sourceId == Riven.Player.NetworkId)
-                        {
-                            Console.WriteLine("cancel wawf");
-                            Riven.moveTo(Game.CursorPos);
-                            Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
-                            LXOrbwalker.ResetAutoAttackTimer();
-                            Riven.cancelAnim();
-                        }
-                    }
-                   
-                    if (args.PacketData[0] == 0x61) //move
+                if (args.PacketData[0] == 0x61) // Move
+                {
+                    var packet = new GamePacket(args.PacketData) {Position = 12};
+                    var sourceId = packet.ReadInteger();
+                    if (sourceId != Riven.Player.NetworkId)
                     {
-                        GamePacket packet = new GamePacket(args.PacketData);
-                        packet.Position = 12;
-                        int sourceId = packet.ReadInteger();
-                        if (sourceId == Riven.Player.NetworkId)
-                        {
-                            if (LXOrbwalker.GetPossibleTarget() != null)
-                            {
-                            //    Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(LXOrbwalker.GetPossibleTarget().Position.X, LXOrbwalker.GetPossibleTarget().Position.Y)).Send();
-                                LXOrbwalker.ResetAutoAttackTimer();
-                            }
-                        }
+                        return;
                     }
-                    else if (args.PacketData[0] == 0x38) //animation2
+
+                    if (LxOrbwalker.GetPossibleTarget() != null)
                     {
-                        GamePacket packet = new GamePacket(args.PacketData);
-                        packet.Position = 1;
-                        int sourceId = packet.ReadInteger();
-                        if (packet.Size() == 9 && sourceId == Riven.Player.NetworkId)
-                        {
-                            Riven.moveTo(Game.CursorPos);
-                            Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y)).Send();
-                            LXOrbwalker.ResetAutoAttackTimer();
-                            Riven.cancelAnim();
-                        }
+                        // Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(LXOrbwalker.GetPossibleTarget().Position.X, LXOrbwalker.GetPossibleTarget().Position.Y)).Send();
+                        LxOrbwalker.ResetAutoAttackTimer();
                     }
+                }
+                else if (args.PacketData[0] == 0x38) // Animation2
+                {
+                    var packet = new GamePacket(args.PacketData) {Position = 1};
+                    var sourceId = packet.ReadInteger();
+                    if (packet.Size() != 9 || sourceId != Riven.Player.NetworkId)
+                    {
+                        return;
+                    }
+
+                    Riven.MoveTo(Game.CursorPos);
+                    Packet.C2S.Move.Encoded(new Packet.C2S.Move.Struct(Game.CursorPos.X, Game.CursorPos.Y))
+                        .Send();
+                    LxOrbwalker.ResetAutoAttackTimer();
+                    Riven.CancelAnim();
                 }
             }
             catch (Exception ex)
@@ -375,31 +355,38 @@ namespace RivenSharp
             }
         }
 
-        public static void OnGameSendPacket(GamePacketEventArgs args)
+        public static void Game_OnGameSendPacket(GamePacketEventArgs args)
         {
             try
             {
                 if (args.PacketData[0] == 119)
+                {
                     args.Process = false;
+                }
 
                 //if (Riven.orbwalker.ActiveMode.ToString() == "Combo")
-                 //   LogPacket(args);
-                if (args.PacketData[0] == 154 && LXOrbwalker.CurrentMode == LXOrbwalker.Mode.Combo)
+                //   LogPacket(args);
+                if (args.PacketData[0] != 154 || LxOrbwalker.CurrentMode != LxOrbwalker.Mode.Combo)
                 {
-                    Packet.C2S.Cast.Struct cast = Packet.C2S.Cast.Decoded(args.PacketData);
-                    if ((int) cast.Slot > -1 && (int) cast.Slot < 5)
-                    {
-                        Utility.DelayAction.Add(Game.Ping+LXOrbwalker.GetCurrentWindupTime(), delegate { Riven.cancelAnim(true); });
+                    return;
+                }
 
-                        //Game.Say("/l");
-                    }
+                var cast = Packet.C2S.Cast.Decoded(args.PacketData);
+                if ((int) cast.Slot > -1 && (int) cast.Slot < 5)
+                {
+                    Utility.DelayAction.Add(Game.Ping + LxOrbwalker.GetCurrentWindupTime(),
+                        delegate { Riven.CancelAnim(true); });
 
-                    if (cast.Slot == SpellSlot.E && Riven.R.IsReady() && Config.Item("useR").GetValue<bool>())
-                    {
-                        Utility.DelayAction.Add(Game.Ping + 50, delegate { Riven.useRSmart(LXOrbwalker.GetPossibleTarget()); });
-                    }
-                    //Console.WriteLine(cast.Slot + " : " + Game.Ping);
-                   /* if (cast.Slot == SpellSlot.Q)
+                    //Game.Say("/l");
+                }
+
+                if (cast.Slot == SpellSlot.E && Riven.R.IsReady() && Config.Item("useR").GetValue<bool>())
+                {
+                    Utility.DelayAction.Add(Game.Ping + 50,
+                        delegate { Riven.UseRSmart(LxOrbwalker.GetPossibleTarget()); });
+                }
+                //Console.WriteLine(cast.Slot + " : " + Game.Ping);
+                /* if (cast.Slot == SpellSlot.Q)
                         Orbwalking.ResetAutoAttackTimer();
                     else if (cast.Slot == SpellSlot.W && Riven.Q.IsReady())
                         Utility.DelayAction.Add(Game.Ping+200, delegate { Riven.useHydra(Riven.orbwalker.GetTarget()); });
@@ -413,17 +400,12 @@ namespace RivenSharp
                         Orbwalking.ResetAutoAttackTimer();
                         Utility.DelayAction.Add(Game.Ping +200, delegate { Riven.useWSmart(Riven.orbwalker.GetTarget()); });
                     }*/
-                        // LogPacket(args);
-                }
+                // LogPacket(args);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
         }
-
-      
-
-
     }
 }

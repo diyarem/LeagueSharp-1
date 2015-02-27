@@ -26,7 +26,7 @@ using SharpDX;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     public enum SkillShotType
     {
@@ -35,13 +35,13 @@ namespace MasterSharp
         SkillshotMissileLine,
         SkillshotCone,
         SkillshotMissileCone,
-        SkillshotRing,
+        SkillshotRing
     }
 
     public enum DetectionType
     {
         RecvPacket,
-        ProcessSpell,
+        ProcessSpell
     }
 
     public struct SafePathResult
@@ -77,28 +77,22 @@ namespace MasterSharp
 
     public class Skillshot
     {
+        private Vector2 _collisionEnd;
+        private int _lastCollisionCalc;
         public Geometry.Circle Circle;
         public DetectionType DetectionType;
         public Vector2 Direction;
         public Geometry.Polygon DrawingPolygon;
-
         public Vector2 End;
-
         public bool ForceDisabled;
         public Vector2 MissilePosition;
         public Geometry.Polygon Polygon;
         public Geometry.Rectangle Rectangle;
         public Geometry.Ring Ring;
         public Geometry.Sector Sector;
-
         public SpellData SpellData;
         public Vector2 Start;
         public int StartTick;
-
-        private bool _cachedValue;
-        private int _cachedValueTick;
-        private Vector2 _collisionEnd;
-        private int _lastCollisionCalc;
 
         public Skillshot(DetectionType detectionType,
             SpellData spellData,
@@ -138,7 +132,7 @@ namespace MasterSharp
                     break;
             }
 
-            UpdatePolygon(); //Create the polygon.
+            UpdatePolygon(); // Create the polygon.
         }
 
         public Vector2 Perpendicular
@@ -173,7 +167,6 @@ namespace MasterSharp
 
         public Geometry.Polygon EvadePolygon { get; set; }
         public Obj_AI_Base Unit { get; set; }
-
         //public T ConfigValue<T>(string name)
         //{
         //    return Config.Menu.Item(name + SpellData.MenuItemName).ConfigValue<T>();
@@ -223,7 +216,7 @@ namespace MasterSharp
 
         public void Game_OnGameUpdate()
         {
-            //Even if it doesnt consume a lot of resources with 20 updatest second works k
+            // Even if it doesnt consume a lot of resources with 20 updatest second works k
             if (SpellData.CollisionObjects.Count() > 0 && SpellData.CollisionObjects != null &&
                 Environment.TickCount - _lastCollisionCalc > 50)
             {
@@ -231,22 +224,24 @@ namespace MasterSharp
                 _collisionEnd = Collision.GetCollisionPoint(this);
             }
 
-            //Update the missile position each time the game updates.
+            // Update the missile position each time the game updates.
             if (SpellData.Type == SkillShotType.SkillshotMissileLine)
             {
                 Rectangle = new Geometry.Rectangle(GetMissilePosition(0), CollisionEnd, SpellData.Radius);
                 UpdatePolygon();
             }
 
-            //Spells that update to the unit position.
+            // Spells that update to the unit position.
             if (SpellData.MissileFollowsUnit)
             {
-                if (Unit.IsVisible)
+                if (!Unit.IsVisible)
                 {
-                    End = Unit.ServerPosition.To2D();
-                    Direction = (End - Start).Normalized();
-                    UpdatePolygon();
+                    return;
                 }
+
+                End = Unit.ServerPosition.To2D();
+                Direction = (End - Start).Normalized();
+                UpdatePolygon();
             }
         }
 
@@ -312,15 +307,15 @@ namespace MasterSharp
             var t = Math.Max(0, Environment.TickCount + time - StartTick - SpellData.Delay);
 
 
-            var x = 0;
+            int x;
 
-            //Missile with acceleration = 0.
+            // Missile with acceleration = 0.
             if (SpellData.MissileAccel == 0)
             {
                 x = t*SpellData.MissileSpeed/1000;
             }
 
-                //Missile with constant acceleration.
+            //Missile with constant acceleration.
             else
             {
                 var t1 = (SpellData.MissileAccel > 0
@@ -348,7 +343,6 @@ namespace MasterSharp
             return Start + Direction*t;
         }
 
-
         /// <summary>
         ///     Returns if the skillshot will hit you when trying to blink to the point.
         /// </summary>
@@ -361,19 +355,14 @@ namespace MasterSharp
                 return true;
             }
 
-            //Skillshots with missile
+            // Skillshots with missile
             if (SpellData.Type == SkillShotType.SkillshotMissileLine)
             {
                 var missilePositionAfterBlink = GetMissilePosition(delay + timeOffset);
                 var myPositionProjection =
                     ObjectManager.Player.ServerPosition.To2D().ProjectOn(Start, End);
 
-                if (missilePositionAfterBlink.Distance(End) < myPositionProjection.SegmentPoint.Distance(End))
-                {
-                    return false;
-                }
-
-                return true;
+                return !(missilePositionAfterBlink.Distance(End) < myPositionProjection.SegmentPoint.Distance(End));
             }
 
             //skillshots without missile
@@ -393,7 +382,7 @@ namespace MasterSharp
             int delay = 0,
             Obj_AI_Base unit = null)
         {
-            var Distance = 0f;
+            var distance = 0f;
             timeOffset += Game.Ping/2;
 
             speed = (speed == -1) ? (int) ObjectManager.Player.MoveSpeed : speed;
@@ -422,8 +411,8 @@ namespace MasterSharp
                     {
                         segmentIntersections.Add(
                             new FoundIntersection(
-                                Distance + intersection.Point.Distance(from),
-                                (int) ((Distance + intersection.Point.Distance(from))*1000/speed),
+                                distance + intersection.Point.Distance(from),
+                                (int) ((distance + intersection.Point.Distance(from))*1000/speed),
                                 intersection.Point, from));
                     }
                 }
@@ -431,17 +420,17 @@ namespace MasterSharp
                 var sortedList = segmentIntersections.OrderBy(o => o.Distance).ToList();
                 allIntersections.AddRange(sortedList);
 
-                Distance += from.Distance(to);
+                distance += from.Distance(to);
             }
 
-            //Skillshot with missile.
+            // Skillshot with missile.
             if (SpellData.Type == SkillShotType.SkillshotMissileLine ||
                 SpellData.Type == SkillShotType.SkillshotMissileCone)
             {
-                //Outside the skillshot
+                // Outside the skillshot
                 if (IsSafe(ObjectManager.Player.ServerPosition.To2D()))
                 {
-                    //No intersections -> Safe
+                    // No intersections -> Safe
                     if (allIntersections.Count == 0)
                     {
                         return new SafePathResult(true, new FoundIntersection());
@@ -452,7 +441,7 @@ namespace MasterSharp
                         var enterIntersection = allIntersections[i];
                         var enterIntersectionProjection = enterIntersection.Point.ProjectOn(Start, End).SegmentPoint;
 
-                        //Intersection with no exit point.
+                        // Intersection with no exit point.
                         if (i == allIntersections.Count - 1)
                         {
                             var missilePositionOnIntersection =
@@ -464,26 +453,26 @@ namespace MasterSharp
                                     ObjectManager.Player.MoveSpeed < SpellData.MissileSpeed, allIntersections[0]);
                         }
 
-
                         var exitIntersection = allIntersections[i + 1];
                         var exitIntersectionProjection = exitIntersection.Point.ProjectOn(Start, End).SegmentPoint;
-
                         var missilePosOnEnter = GetMissilePosition(enterIntersection.Time - timeOffset);
                         var missilePosOnExit = GetMissilePosition(exitIntersection.Time + timeOffset);
 
-                        //Missile didnt pass.
-                        if (missilePosOnEnter.Distance(End) + 50 > enterIntersectionProjection.Distance(End))
+                        // Missile didnt pass.
+                        if (!(missilePosOnEnter.Distance(End) + 50 > enterIntersectionProjection.Distance(End)))
                         {
-                            if (missilePosOnExit.Distance(End) <= exitIntersectionProjection.Distance(End))
-                            {
-                                return new SafePathResult(false, allIntersections[0]);
-                            }
+                            continue;
+                        }
+
+                        if (missilePosOnExit.Distance(End) <= exitIntersectionProjection.Distance(End))
+                        {
+                            return new SafePathResult(false, allIntersections[0]);
                         }
                     }
 
                     return new SafePathResult(true, allIntersections[0]);
                 }
-                //Inside the skillshot.
+                // Inside the skillshot.
                 if (allIntersections.Count == 0)
                 {
                     return new SafePathResult(false, new FoundIntersection());
@@ -491,10 +480,9 @@ namespace MasterSharp
 
                 if (allIntersections.Count > 0)
                 {
-                    //Check only for the exit point
+                    // Check only for the exit point
                     var exitIntersection = allIntersections[0];
                     var exitIntersectionProjection = exitIntersection.Point.ProjectOn(Start, End).SegmentPoint;
-
                     var missilePosOnExit = GetMissilePosition(exitIntersection.Time + timeOffset);
                     if (missilePosOnExit.Distance(End) <= exitIntersectionProjection.Distance(End))
                     {
@@ -551,7 +539,7 @@ namespace MasterSharp
             return !IsSafe(point);
         }
 
-        //Returns if the skillshot is about to hit the unit in the next time seconds.
+        // Returns if the skillshot is about to hit the unit in the next time seconds.
         public bool IsAboutToHit(int time, Obj_AI_Base unit)
         {
             if (SpellData.Type == SkillShotType.SkillshotMissileLine)
@@ -563,43 +551,19 @@ namespace MasterSharp
                 var projection = unit.ServerPosition.To2D()
                     .ProjectOn(missilePos, missilePosAfterT);
 
-                if (projection.IsOnSegment && projection.SegmentPoint.Distance(unit.ServerPosition) < SpellData.Radius)
-                {
-                    return true;
-                }
+                return projection.IsOnSegment &&
+                       projection.SegmentPoint.Distance(unit.ServerPosition) < SpellData.Radius;
+            }
 
+            if (IsSafe(unit.ServerPosition.To2D()))
+            {
                 return false;
             }
 
-            if (!IsSafe(unit.ServerPosition.To2D()))
-            {
-                var timeToExplode = SpellData.ExtraDuration + SpellData.Delay +
-                                    (int) ((1000*Start.Distance(End))/SpellData.MissileSpeed) -
-                                    (Environment.TickCount - StartTick);
-                if (timeToExplode <= time)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            var timeToExplode = SpellData.ExtraDuration + SpellData.Delay +
+                                (int) ((1000*Start.Distance(End))/SpellData.MissileSpeed) -
+                                (Environment.TickCount - StartTick);
+            return timeToExplode <= time;
         }
-
-        //public void Draw(Color color, Color missileColor, int width = 1)
-        //{
-        //    if (!ConfigValue<bool>("Draw"))
-        //    {
-        //        return;
-        //    }
-        //    DrawingPolygon.Draw(color, width);
-
-        //    if (SpellData.Type == SkillShotType.SkillshotMissileLine)
-        //    {
-        //        var position = GetMissilePosition(0);
-        //        Utils.DrawLineInWorld(
-        //            (position + SpellData.Radius * Direction.Perpendicular()).To3D(),
-        //            (position - SpellData.Radius * Direction.Perpendicular()).To3D(), 2, missileColor);
-        //    }
-        //}
     }
 }

@@ -21,7 +21,7 @@ using LeagueSharp;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     public enum SpellValidTargets
     {
@@ -32,7 +32,7 @@ namespace MasterSharp
         EnemyWards,
 
         AllyChampions,
-        EnemyChampions,
+        EnemyChampions
     }
 
     /// <summary>
@@ -43,11 +43,11 @@ namespace MasterSharp
         public delegate float MoveSpeedAmount();
 
         public bool CanShieldAllies;
-        public string CheckSpellName = "";
+        public string CheckSpellName = string.Empty;
+        public int DangerLevel;
         public int Delay;
         public bool FixedRange;
         public bool Invert;
-
         public bool IsBlink;
         public bool IsDash;
         public bool IsInvulnerability;
@@ -55,27 +55,24 @@ namespace MasterSharp
         public bool IsShield;
         public bool IsSpellShield;
         public bool IsSummonerSpell;
-
         public float MaxRange;
         public MoveSpeedAmount MoveSpeedTotalAmount;
         public string Name;
         public bool RequiresPreMove;
         public bool SelfCast;
         public SpellSlot Slot;
-
         public int Speed;
         public SpellValidTargets[] ValidTargets;
 
-        public int _dangerLevel;
-
         public EvadeSpellData()
         {
+            // Hmm..
         }
 
         public EvadeSpellData(string name, int dangerLevel)
         {
             Name = name;
-            _dangerLevel = dangerLevel;
+            DangerLevel = dangerLevel;
         }
 
         public bool IsTargetted
@@ -109,7 +106,8 @@ namespace MasterSharp
 
         public bool IsReady()
         {
-            return ((CheckSpellName == "" || ObjectManager.Player.Spellbook.GetSpell(Slot).Name == CheckSpellName) &&
+            return ((CheckSpellName == string.Empty ||
+                     ObjectManager.Player.Spellbook.GetSpell(Slot).Name == CheckSpellName) &&
                     ((IsSummonerSpell && ObjectManager.Player.Spellbook.CanUseSpell(Slot) == SpellState.Ready) ||
                      (!IsSummonerSpell && ObjectManager.Player.Spellbook.CanUseSpell(Slot) == SpellState.Ready)));
         }
@@ -125,7 +123,7 @@ namespace MasterSharp
             FixedRange = fixedRange;
             Delay = delay;
             Speed = speed;
-            _dangerLevel = dangerLevel;
+            DangerLevel = dangerLevel;
             IsDash = true;
         }
     }
@@ -143,7 +141,7 @@ namespace MasterSharp
             MaxRange = range;
             Slot = slot;
             Delay = delay;
-            _dangerLevel = dangerLevel;
+            DangerLevel = dangerLevel;
             IsSummonerSpell = isSummonerSpell;
             IsBlink = true;
         }
@@ -156,7 +154,7 @@ namespace MasterSharp
             Name = name;
             Slot = slot;
             Delay = delay;
-            _dangerLevel = dangerLevel;
+            DangerLevel = dangerLevel;
             IsInvulnerability = true;
         }
     }
@@ -168,7 +166,7 @@ namespace MasterSharp
             Name = name;
             Slot = slot;
             Delay = delay;
-            _dangerLevel = dangerLevel;
+            DangerLevel = dangerLevel;
             IsSpellShield = isSpellShield;
             IsShield = !IsSpellShield;
         }
@@ -181,7 +179,7 @@ namespace MasterSharp
             Name = name;
             Slot = slot;
             Delay = delay;
-            _dangerLevel = dangerLevel;
+            DangerLevel = dangerLevel;
             MoveSpeedTotalAmount = amount;
             IsMovementSpeedBuff = true;
         }

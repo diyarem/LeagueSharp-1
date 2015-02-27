@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ClipperLib;
 using LeagueSharp.Common;
 using SharpDX;
@@ -26,7 +27,7 @@ using Color = System.Drawing.Color;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     /// <summary>
     ///     Class that contains the geometry related methods.
@@ -35,22 +36,15 @@ namespace MasterSharp
     {
         private const int CircleLineSegmentN = 22;
 
-        public static Vector3 SwitchYZ(this Vector3 v)
+        public static Vector3 SwitchYz(this Vector3 v)
         {
             return new Vector3(v.X, v.Z, v.Y);
         }
 
-        //Clipper
-        public static List<Polygon> ToPolygons(this List<List<IntPoint>> v)
+        // Clipper
+        public static List<LeagueSharp.Common.Geometry.Polygon> ToPolygons(this List<List<IntPoint>> v)
         {
-            var result = new List<Polygon>();
-
-            foreach (var path in v)
-            {
-                result.Add(path.ToPolygon());
-            }
-
-            return result;
+            return v.Select(LeagueSharp.Common.Geometry.ToPolygon).ToList();
         }
 
         /// <summary>
@@ -68,6 +62,7 @@ namespace MasterSharp
                 {
                     return from + distance*(to - from).Normalized();
                 }
+
                 distance -= d;
             }
             return self[self.Count - 1];
@@ -80,9 +75,9 @@ namespace MasterSharp
             {
                 polygon.Add(new Vector2(point.X, point.Y));
             }
+
             return polygon;
         }
-
 
         public static List<List<IntPoint>> ClipPolygons(List<Polygon> polygons)
         {
@@ -103,7 +98,6 @@ namespace MasterSharp
 
             return solution;
         }
-
 
         public class Circle
         {
@@ -147,11 +141,7 @@ namespace MasterSharp
             public List<IntPoint> ToClipperPath()
             {
                 var result = new List<IntPoint>(Points.Count);
-
-                foreach (var point in Points)
-                {
-                    result.Add(new IntPoint(point.X, point.Y));
-                }
+                result.AddRange(Points.Select(point => new IntPoint(point.X, point.Y)));
 
                 return result;
             }
@@ -206,12 +196,11 @@ namespace MasterSharp
             }
         }
 
-
         public class Ring
         {
             public Vector2 Center;
             public float Radius;
-            public float RingRadius; //actually radius width.
+            public float RingRadius; // Actually radius width.
 
             public Ring(Vector2 center, float radius, float ringRadius)
             {
@@ -270,11 +259,11 @@ namespace MasterSharp
                 var outRadius = (Radius + offset)/(float) Math.Cos(2*Math.PI/CircleLineSegmentN);
 
                 result.Add(Center);
-                var Side1 = Direction.Rotated(-Angle*0.5f);
+                var side1 = Direction.Rotated(-Angle*0.5f);
 
                 for (var i = 0; i <= CircleLineSegmentN; i++)
                 {
-                    var cDirection = Side1.Rotated(i*Angle/CircleLineSegmentN).Normalized();
+                    var cDirection = side1.Rotated(i*Angle/CircleLineSegmentN).Normalized();
                     result.Add(new Vector2(Center.X + outRadius*cDirection.X, Center.Y + outRadius*cDirection.Y));
                 }
 

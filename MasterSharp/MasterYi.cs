@@ -1,89 +1,90 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LeagueSharp;
 using LeagueSharp.Common;
-using SharpDX;
+using MasterSharp.Evade;
 
 namespace MasterSharp
 {
-    class MasterYi
+    internal class MasterYi
     {
-        public static Obj_AI_Hero player = ObjectManager.Player;
-
-        public static SummonerItems sumItems = new SummonerItems(player);
-
-        public static Spellbook sBook = player.Spellbook;
-
-        public static SpellDataInst Qdata = sBook.GetSpell(SpellSlot.Q);
-        public static SpellDataInst Wdata = sBook.GetSpell(SpellSlot.W);
-        public static SpellDataInst Edata = sBook.GetSpell(SpellSlot.E);
-        public static SpellDataInst Rdata = sBook.GetSpell(SpellSlot.R);
         public static Spell Q = new Spell(SpellSlot.Q, 600);
         public static Spell W = new Spell(SpellSlot.W, 0);
         public static Spell E = new Spell(SpellSlot.E, 0);
         public static Spell R = new Spell(SpellSlot.R, 0);
+        public static SpellSlot Smite = SpellSlot.Unknown;
+        public static Obj_AI_Base SelectedTarget = null;
 
-
-        public static SpellSlot smite = SpellSlot.Unknown;
-
-
-        public static Obj_AI_Base selectedTarget = null;
-
-        public static void setSkillShots()
+        public static void SetSkillShots()
         {
-            setupSmite();
+            SetupSmite();
         }
-        public static void setupSmite()
+
+        public static void SetupSmite()
         {
-            if (player.Spellbook.GetSpell(SpellSlot.Summoner1).SData.Name.ToLower().Contains("smite"))
+            if (Player.Spellbook.GetSpell(SpellSlot.Summoner1).SData.Name.ToLower().Contains("smite"))
             {
-                smite = SpellSlot.Summoner1;
+                Smite = SpellSlot.Summoner1;
             }
-            else if (player.Spellbook.GetSpell(SpellSlot.Summoner2).SData.Name.ToLower().Contains("smite"))
+            else if (Player.Spellbook.GetSpell(SpellSlot.Summoner2).SData.Name.ToLower().Contains("smite"))
             {
-                smite = SpellSlot.Summoner2;
+                Smite = SpellSlot.Summoner2;
             }
         }
 
-        public static void slayMaderDuker(Obj_AI_Base target)
+        public static void SlayMaderDuker(Obj_AI_Base target)
         {
             try
             {
                 if (target == null)
+                {
                     return;
-                if(MasterSharp.Config.Item("useSmite").GetValue<bool>())
-                    useSmiteOnTarget(target);
-
-                if (target.Distance(player) < 500)
-                {
-                    sumItems.cast(SummonerItems.ItemIds.Ghostblade);
-                }
-                if (target.Distance(player) < 300)
-                {
-                    sumItems.cast(SummonerItems.ItemIds.Hydra);
-                }
-                if (target.Distance(player) < 300)
-                {
-                    sumItems.cast(SummonerItems.ItemIds.Tiamat);
-                }
-                if (target.Distance(player) < 300 )
-                {
-                    sumItems.cast(SummonerItems.ItemIds.Cutlass, target);
-                }
-                if (target.Distance(player) < 500 && (player.Health / player.MaxHealth) * 100 < 85)
-                {
-                    sumItems.cast(SummonerItems.ItemIds.BotRK, target);
                 }
 
-                if(MasterSharp.Config.Item("useQ").GetValue<bool>())
-                    useQSmart(target);
+                if (MasterSharp.Config.Item("useSmite").GetValue<bool>())
+                {
+                    UseSmiteOnTarget(target);
+                }
+
+                if (target.Distance(Player) < 500)
+                {
+                    SumItems.cast(SummonerItems.ItemIds.Ghostblade);
+                }
+
+                if (target.Distance(Player) < 300)
+                {
+                    SumItems.cast(SummonerItems.ItemIds.Hydra);
+                }
+
+                if (target.Distance(Player) < 300)
+                {
+                    SumItems.cast(SummonerItems.ItemIds.Tiamat);
+                }
+
+                if (target.Distance(Player) < 300)
+                {
+                    SumItems.cast(SummonerItems.ItemIds.Cutlass, target);
+                }
+
+                if (target.Distance(Player) < 500 && (Player.Health/Player.MaxHealth)*100 < 85)
+                {
+                    SumItems.cast(SummonerItems.ItemIds.BotRk, target);
+                }
+
+                if (MasterSharp.Config.Item("useQ").GetValue<bool>())
+                {
+                    UseQSmart(target);
+                }
+
                 if (MasterSharp.Config.Item("useE").GetValue<bool>())
-                    useESmart(target);
+                {
+                    UseESmart(target);
+                }
+
                 if (MasterSharp.Config.Item("useR").GetValue<bool>())
-                    useRSmart(target);
+                {
+                    UseRSmart(target);
+                }
             }
             catch (Exception ex)
             {
@@ -91,175 +92,184 @@ namespace MasterSharp
             }
         }
 
-
-        public static void useQtoKill(Obj_AI_Base target)
+        public static void UseQtoKill(Obj_AI_Base target)
         {
-            if (Q.IsReady() && (target.Health <= Q.GetDamage(target) || iAmLow(0.20f)))
+            if (Q.IsReady() && (target.Health <= Q.GetDamage(target) || AmLow(0.20f)))
+            {
                 Q.Cast(target, MasterSharp.Config.Item("packets").GetValue<bool>());
+            }
         }
 
-        public static void useESmart(Obj_AI_Base target)
+        public static void UseESmart(Obj_AI_Base target)
         {
-            if (LXOrbwalker.InAutoAttackRange(target) && E.IsReady() && (aaToKill(target)>2 || iAmLow()))
+            if (LxOrbwalker.InAutoAttackRange(target) && E.IsReady() && (AaToKill(target) > 2 || AmLow()))
+            {
                 E.Cast(MasterSharp.Config.Item("packets").GetValue<bool>());
+            }
         }
 
-        public static void useRSmart(Obj_AI_Base target)
+        public static void UseRSmart(Obj_AI_Base target)
         {
-            if (LXOrbwalker.InAutoAttackRange(target) && R.IsReady() && aaToKill(target) > 5)
+            if (LxOrbwalker.InAutoAttackRange(target) && R.IsReady() && AaToKill(target) > 5)
+            {
                 R.Cast(MasterSharp.Config.Item("packets").GetValue<bool>());
-        }
-
-        public static void useQSmart(Obj_AI_Base target)
-        {
-            try
-            {
-
-                if (!Q.IsReady() || target.Path.Count() == 0 || !target.IsMoving)
-                    return;
-                Vector2 nextEnemPath = target.Path[0].To2D();
-                var dist = player.Position.To2D().Distance(target.Position.To2D());
-                var distToNext = nextEnemPath.Distance(player.Position.To2D());
-                if (distToNext <= dist)
-                    return;
-                var msDif = player.MoveSpeed - target.MoveSpeed;
-                if (msDif <= 0 && !LXOrbwalker.InAutoAttackRange(target) && LXOrbwalker.CanAttack())
-                    Q.Cast(target);
-
-                var reachIn = dist/msDif;
-                if(reachIn>4)
-                    Q.Cast(target);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
-        }
-
-        public static void useSmiteOnTarget(Obj_AI_Base target)
-        {
-            if (smite != SpellSlot.Unknown && player.Spellbook.CanUseSpell(smite) == SpellState.Ready)
-            {
-                if (target.Distance(player,true)<=700*700 &&(yiGotItemRange(3714, 3718) || yiGotItemRange(3706, 3710)))
-                {
-               
-                    player.Spellbook.CastSpell(smite, target);
-                }
             }
         }
 
-        public static bool iAmLow(float lownes = .25f)
+        public static void UseQSmart(Obj_AI_Base target)
         {
-            return player.Health / player.MaxHealth < lownes;
-        }
-
-        public static int aaToKill(Obj_AI_Base target)
-        {
-            return 1+(int)(target.Health/player.GetAutoAttackDamage(target));
-        }
-
-        public static void evadeBuff(BuffInstance buf,TargetedSkills.TargSkill skill)
-        {
-            if (Q.IsReady() && jumpEnesAround() != 0 && buf.EndTime - Game.Time < skill.delay / 1000)
+            if (!Q.IsReady() || target.Path.Count() == 0 || !target.IsMoving)
             {
-
-                //Console.WriteLine("evade buuf");
-                useQonBest();
+                return;
             }
-            else if (W.IsReady() && (!Q.IsReady() || jumpEnesAround() != 0 )&& buf.EndTime - Game.Time < 0.4f)
+
+            var nextEnemPath = target.Path[0].To2D();
+            var dist = Player.Position.To2D().Distance(target.Position.To2D());
+            var distToNext = nextEnemPath.Distance(Player.Position.To2D());
+            if (distToNext <= dist)
             {
-                var dontMove = 400;
-                LXOrbwalker.cantMoveTill = Environment.TickCount + (int)dontMove;
+                return;
+            }
+
+            var msDif = Player.MoveSpeed - target.MoveSpeed;
+            if (msDif <= 0 && !LxOrbwalker.InAutoAttackRange(target) && LxOrbwalker.CanAttack())
+            {
+                Q.Cast(target);
+            }
+
+            var reachIn = dist/msDif;
+            if (reachIn > 4)
+            {
+                Q.Cast(target);
+            }
+        }
+
+        public static void UseSmiteOnTarget(Obj_AI_Base target)
+        {
+            if (Smite == SpellSlot.Unknown || Player.Spellbook.CanUseSpell(Smite) != SpellState.Ready)
+            {
+                return;
+            }
+
+            if (target.Distance(Player, true) <= 700*700 &&
+                (YiGotItemRange(3714, 3718) || YiGotItemRange(3706, 3710)))
+            {
+                Player.Spellbook.CastSpell(Smite, target);
+            }
+        }
+
+        public static bool AmLow(float lownes = .25f)
+        {
+            return Player.Health/Player.MaxHealth < lownes;
+        }
+
+        public static int AaToKill(Obj_AI_Base target)
+        {
+            return 1 + (int) (target.Health/Player.GetAutoAttackDamage(target));
+        }
+
+        public static void EvadeBuff(BuffInstance buf, TargetedSkills.TargSkill skill)
+        {
+            if (Q.IsReady() && JumpEnesAround() != 0 && buf.EndTime - Game.Time < skill.Delay/1000)
+            {
+                // Console.WriteLine("evade buuf");
+                UseQonBest();
+            }
+            else if (W.IsReady() && (!Q.IsReady() || JumpEnesAround() != 0) && buf.EndTime - Game.Time < 0.4f)
+            {
+                const int dontMove = 400;
+                LxOrbwalker.CantMoveTill = Environment.TickCount + dontMove;
                 W.Cast();
             }
-
-
         }
 
-        public static void evadeDamage(int useQ, int useW,GameObjectProcessSpellCastEventArgs psCast,int delay = 250)
+        public static void EvadeDamage(int useQ, int useW, GameObjectProcessSpellCastEventArgs psCast, int delay = 250)
         {
-            if (useQ != 0 && Q.IsReady() && jumpEnesAround() != 0)
+            if (useQ != 0 && Q.IsReady() && JumpEnesAround() != 0)
             {
                 if (delay != 0)
-                    Utility.DelayAction.Add(delay, useQonBest);
+                {
+                    Utility.DelayAction.Add(delay, UseQonBest);
+                }
                 else
-                    useQonBest();
+                {
+                    UseQonBest();
+                }
             }
             else if (useW != 0 && W.IsReady())
             {
                 var dontMove = (psCast.TimeCast > 2) ? 2000 : psCast.TimeCast*1000;
-                LXOrbwalker.cantMoveTill = Environment.TickCount +(int) dontMove;
+                LxOrbwalker.CantMoveTill = Environment.TickCount + (int) dontMove;
                 W.Cast();
             }
-
-
         }
 
-        public static int jumpEnesAround()
+        public static int JumpEnesAround()
         {
-
-            return ObjectManager.Get<Obj_AI_Base>().Count(ob => ob.IsEnemy && !(ob is FollowerObject) && (ob is Obj_AI_Minion || ob is Obj_AI_Hero) &&
-                                                                ob.Distance(player) < 600 && !ob.IsDead);
+            return
+                ObjectManager.Get<Obj_AI_Base>()
+                    .Count(ob => ob.IsEnemy && (ob is Obj_AI_Minion || ob is Obj_AI_Hero) &&
+                                 ob.Distance(Player) < 600 && !ob.IsDead);
         }
 
-        public static void evadeSkillShot(Skillshot sShot)
+        public static void EvadeSkillShot(Skillshot sShot)
         {
             var sd = SpellDatabase.GetByMissileName(sShot.SpellData.MissileSpellName);
-            if (LXOrbwalker.CurrentMode == LXOrbwalker.Mode.Combo && (MasterSharp.skillShotMustBeEvaded(sd.MenuItemName) || MasterSharp.skillShotMustBeEvadedW(sd.MenuItemName)))
+            if (LxOrbwalker.CurrentMode == LxOrbwalker.Mode.Combo &&
+                (MasterSharp.SkillShotMustBeEvaded(sd.MenuItemName) ||
+                 MasterSharp.SkillShotMustBeEvadedW(sd.MenuItemName)))
             {
-                float spellDamage = (float)sShot.Unit.GetSpellDamage(player, sd.SpellName);
-                int procHp = (int)((spellDamage / player.MaxHealth) * 100);
-                bool willKill = player.Health <= spellDamage;
-                if (Q.IsReady() && jumpEnesAround() != 0 && (MasterSharp.skillShotMustBeEvaded(sd.MenuItemName)) || willKill)
+                var spellDamage = (float) sShot.Unit.GetSpellDamage(Player, sd.SpellName);
+                var willKill = Player.Health <= spellDamage;
+                if (Q.IsReady() && JumpEnesAround() != 0 && (MasterSharp.SkillShotMustBeEvaded(sd.MenuItemName)) ||
+                    willKill)
                 {
-                    useQonBest();
+                    UseQonBest();
                 }
-                else if ((!Q.IsReady(150) || !MasterSharp.skillShotMustBeEvaded(sd.MenuItemName)) && W.IsReady() && (MasterSharp.skillShotMustBeEvadedW(sd.MenuItemName) || willKill))
+                else if ((!Q.IsReady(150) || !MasterSharp.SkillShotMustBeEvaded(sd.MenuItemName)) && W.IsReady() &&
+                         (MasterSharp.SkillShotMustBeEvadedW(sd.MenuItemName)))
                 {
-                    LXOrbwalker.cantMoveTill = Environment.TickCount + 500;
+                    LxOrbwalker.CantMoveTill = Environment.TickCount + 500;
                     W.Cast();
                 }
             }
 
-            if (LXOrbwalker.CurrentMode != LXOrbwalker.Mode.None && (MasterSharp.skillShotMustBeEvadedAllways(sd.MenuItemName) || MasterSharp.skillShotMustBeEvadedWAllways(sd.MenuItemName)))
+            if (LxOrbwalker.CurrentMode != LxOrbwalker.Mode.None &&
+                (MasterSharp.SkillShotMustBeEvadedAllways(sd.MenuItemName) ||
+                 MasterSharp.SkillShotMustBeEvadedWAllways(sd.MenuItemName)))
             {
-                float spellDamage = (float)sShot.Unit.GetSpellDamage(player, sd.SpellName);
-                bool willKill = player.Health <= spellDamage;
-                if (Q.IsReady() && jumpEnesAround() != 0 && (MasterSharp.skillShotMustBeEvadedAllways(sd.MenuItemName) || willKill))
+                var spellDamage = (float) sShot.Unit.GetSpellDamage(Player, sd.SpellName);
+                var willKill = Player.Health <= spellDamage;
+                if (Q.IsReady() && JumpEnesAround() != 0 &&
+                    (MasterSharp.SkillShotMustBeEvadedAllways(sd.MenuItemName) || willKill))
                 {
-                    useQonBest();
-                    return;
+                    UseQonBest();
                 }
-                else if ((!Q.IsReady() || !MasterSharp.skillShotMustBeEvadedAllways(sd.MenuItemName)) && W.IsReady() && (MasterSharp.skillShotMustBeEvadedWAllways(sd.MenuItemName) || willKill))
+                else if ((!Q.IsReady() || !MasterSharp.SkillShotMustBeEvadedAllways(sd.MenuItemName)) && W.IsReady() &&
+                         (MasterSharp.SkillShotMustBeEvadedWAllways(sd.MenuItemName) || willKill))
                 {
-                    LXOrbwalker.cantMoveTill = Environment.TickCount + 500;
+                    LxOrbwalker.CantMoveTill = Environment.TickCount + 500;
                     W.Cast();
-                    return;
                 }
             }
-
-
         }
 
-
-
-        public static void useQonBest()
+        public static void UseQonBest()
         {
             try
             {
                 if (!Q.IsReady())
                 {
-                    //Console.WriteLine("Fuk uo here ");
+                    // Console.WriteLine("Fuk uo here ");
                     return;
                 }
-                if (selectedTarget != null)
-                {
 
-                    if (selectedTarget.Distance(player) < 600)
+                if (SelectedTarget != null)
+                {
+                    if (SelectedTarget.Distance(Player) < 600)
                     {
-                       // Console.WriteLine("Q on targ ");
-                        Q.Cast(selectedTarget, MasterSharp.Config.Item("packets").GetValue<bool>());
+                        // Console.WriteLine("Q on targ ");
+                        Q.Cast(SelectedTarget, MasterSharp.Config.Item("packets").GetValue<bool>());
                         return;
                     }
 
@@ -268,9 +278,9 @@ namespace MasterSharp
                             .Where(
                                 ob =>
                                     ob.IsEnemy && (ob is Obj_AI_Minion || ob is Obj_AI_Hero) &&
-                                    ob.Distance(player) < 600 && !ob.IsDead)
-                            .OrderBy(ob => ob.Distance(selectedTarget, true)).FirstOrDefault();
-                    //Console.WriteLine("do shit? " + bestOther.Name);
+                                    ob.Distance(Player) < 600 && !ob.IsDead)
+                            .OrderBy(ob => ob.Distance(SelectedTarget, true)).FirstOrDefault();
+                    // Console.WriteLine("do shit? " + bestOther.Name);
 
                     if (bestOther != null)
                     {
@@ -283,10 +293,10 @@ namespace MasterSharp
                         ObjectManager.Get<Obj_AI_Base>()
                             .Where(
                                 ob =>
-                                    ob.IsEnemy && !(ob is FollowerObject)  && (ob is Obj_AI_Minion || ob is Obj_AI_Hero) &&
-                                    ob.Distance(player) < 600 && !ob.IsDead)
+                                    ob.IsEnemy && (ob is Obj_AI_Minion || ob is Obj_AI_Hero) &&
+                                    ob.Distance(Player) < 600 && !ob.IsDead)
                             .OrderBy(ob => ob.Distance(Game.CursorPos, true)).FirstOrDefault();
-                    //Console.WriteLine("do shit? " + bestOther.Name);
+                    // Console.WriteLine("do shit? " + bestOther.Name);
 
                     if (bestOther != null)
                     {
@@ -300,9 +310,17 @@ namespace MasterSharp
             }
         }
 
-        public static bool yiGotItemRange(int from, int to)
+        public static bool YiGotItemRange(int from, int to)
         {
-            return player.InventoryItems.Any(item => (int)item.Id >= @from && (int)item.Id <= to);
+            return Player.InventoryItems.Any(item => (int) item.Id >= @from && (int) item.Id <= to);
         }
+
+        public static Obj_AI_Hero Player = ObjectManager.Player;
+        public static SummonerItems SumItems = new SummonerItems(Player);
+        public static Spellbook SBook = Player.Spellbook;
+        public static SpellDataInst Qdata = SBook.GetSpell(SpellSlot.Q);
+        public static SpellDataInst Wdata = SBook.GetSpell(SpellSlot.W);
+        public static SpellDataInst Edata = SBook.GetSpell(SpellSlot.E);
+        public static SpellDataInst Rdata = SBook.GetSpell(SpellSlot.R);
     }
 }

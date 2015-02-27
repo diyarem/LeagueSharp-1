@@ -21,7 +21,7 @@ using LeagueSharp;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     public class SpellData
     {
@@ -42,7 +42,7 @@ namespace MasterSharp
         public string[] ExtraSpellNames = {};
         public bool FixedRange;
         public bool ForceRemove = false;
-        public string FromObject = "";
+        public string FromObject = string.Empty;
         public string[] FromObjects = {};
         public int Id = -1;
         public bool Invert;
@@ -53,16 +53,14 @@ namespace MasterSharp
         public int MissileMaxSpeed;
         public int MissileMinSpeed;
         public int MissileSpeed;
-        public string MissileSpellName = "";
+        public string MissileSpellName = string.Empty;
         public float MultipleAngle;
         public int MultipleNumber = -1;
         public int RingRadius;
         public SpellSlot Slot;
         public string SpellName;
-        public string ToggleParticleName = "";
+        public string ToggleParticleName = string.Empty;
         public SkillShotType Type;
-        private int _radius;
-        private int _range;
 
         public SpellData()
         {
@@ -86,7 +84,7 @@ namespace MasterSharp
             Type = type;
             Delay = delay;
             Range = range;
-            _radius = radius;
+            RawRadius = radius;
             MissileSpeed = missileSpeed;
             AddHitbox = addHitbox;
             FixedRange = fixedRange;
@@ -103,26 +101,19 @@ namespace MasterSharp
             get
             {
                 return (!AddHitbox)
-                    ? _radius
-                    : _radius + (int) ObjectManager.Player.BoundingRadius;
+                    ? RawRadius
+                    : RawRadius + (int) ObjectManager.Player.BoundingRadius;
             }
-            set { _radius = value; }
+            set { RawRadius = value; }
         }
 
-        public int RawRadius
-        {
-            get { return _radius; }
-        }
-
-        public int RawRange
-        {
-            get { return _range; }
-        }
+        public int RawRadius { get; private set; }
+        public int RawRange { get; private set; }
 
         public int Range
         {
-            get { return _range; }
-            set { _range = value; }
+            get { return RawRange; }
+            set { RawRange = value; }
         }
     }
 }

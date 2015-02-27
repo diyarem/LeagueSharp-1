@@ -24,7 +24,7 @@ using LeagueSharp.Common;
 
 #endregion
 
-namespace MasterSharp
+namespace MasterSharp.Evade
 {
     internal class EvadeSpellDatabase
     {
@@ -32,7 +32,7 @@ namespace MasterSharp
 
         static EvadeSpellDatabase()
         {
-            //Add available evading spells to the database. SORTED BY PRIORITY.
+            // Add available evading spells to the database. SORTED BY PRIORITY.
             EvadeSpellData spell;
 
             #region Champion SpellShields
@@ -59,7 +59,7 @@ namespace MasterSharp
 
             #endregion
 
-            //Walking.
+            // Walking.
             spell = new EvadeSpellData("Walking", 1);
             Spells.Add(spell);
 
@@ -152,7 +152,7 @@ namespace MasterSharp
             if (ObjectManager.Player.ChampionName == "Kennen")
             {
                 spell = new MoveBuffData("Kennen E", SpellSlot.E, 100, 3, () => 200 + ObjectManager.Player.MoveSpeed);
-                //Actually it should be +335 but ingame you only gain +230, rito plz
+                // Actually it should be +335 but ingame you only gain +230, rito plz
                 Spells.Add(spell);
             }
 
@@ -222,8 +222,10 @@ namespace MasterSharp
                     "Shyvana W", SpellSlot.W, 100, 4,
                     () =>
                         ObjectManager.Player.MoveSpeed*
-                        (1 + 0.25f + 0.05f*ObjectManager.Player.Spellbook.GetSpell(SpellSlot.W).Level));
-                spell.CheckSpellName = "ShyvanaImmolationAura";
+                        (1 + 0.25f + 0.05f*ObjectManager.Player.Spellbook.GetSpell(SpellSlot.W).Level))
+                {
+                    CheckSpellName = "ShyvanaImmolationAura"
+                };
                 Spells.Add(spell);
             }
 
@@ -291,8 +293,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Aatrox")
             {
-                spell = new DashData("Aatrox Q", SpellSlot.Q, 650, false, 400, 3000, 3);
-                spell.Invert = true;
+                spell = new DashData("Aatrox Q", SpellSlot.Q, 650, false, 400, 3000, 3) {Invert = true};
                 Spells.Add(spell);
             }
 
@@ -302,8 +303,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Akali")
             {
-                spell = new DashData("Akali R", SpellSlot.R, 800, false, 100, 2461, 3);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new DashData("Akali R", SpellSlot.R, 800, false, 100, 2461, 3)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -313,8 +316,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Alistar")
             {
-                spell = new DashData("Alistar W", SpellSlot.W, 650, false, 100, 1900, 3);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new DashData("Alistar W", SpellSlot.W, 650, false, 100, 1900, 3)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -324,8 +329,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Caitlyn")
             {
-                spell = new DashData("Caitlyn E", SpellSlot.E, 490, true, 250, 1000, 3);
-                spell.Invert = true;
+                spell = new DashData("Caitlyn E", SpellSlot.E, 490, true, 250, 1000, 3) {Invert = true};
                 Spells.Add(spell);
             }
 
@@ -345,8 +349,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Fizz")
             {
-                spell = new DashData("Fizz Q", SpellSlot.Q, 550, true, 100, 1400, 4);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyMinions, SpellValidTargets.EnemyChampions};
+                spell = new DashData("Fizz Q", SpellSlot.Q, 550, true, 100, 1400, 4)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyMinions, SpellValidTargets.EnemyChampions}
+                };
                 Spells.Add(spell);
             }
 
@@ -366,8 +372,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Gnar")
             {
-                spell = new DashData("Gnar E", SpellSlot.E, 50, false, 0, 900, 3);
-                spell.CheckSpellName = "GnarE";
+                spell = new DashData("Gnar E", SpellSlot.E, 50, false, 0, 900, 3) {CheckSpellName = "GnarE"};
                 Spells.Add(spell);
             }
 
@@ -387,8 +392,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Irelia")
             {
-                spell = new DashData("Irelia Q", SpellSlot.Q, 650, false, 100, 2200, 3);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new DashData("Irelia Q", SpellSlot.Q, 650, false, 100, 2200, 3)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -398,11 +405,14 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Jax")
             {
-                spell = new DashData("Jax Q", SpellSlot.Q, 700, false, 100, 1400, 3);
-                spell.ValidTargets = new[]
+                spell = new DashData("Jax Q", SpellSlot.Q, 700, false, 100, 1400, 3)
                 {
-                    SpellValidTargets.EnemyWards, SpellValidTargets.AllyWards, SpellValidTargets.AllyMinions,
-                    SpellValidTargets.AllyChampions, SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions
+                    ValidTargets = new[]
+                    {
+                        SpellValidTargets.EnemyWards, SpellValidTargets.AllyWards, SpellValidTargets.AllyMinions,
+                        SpellValidTargets.AllyChampions, SpellValidTargets.EnemyChampions,
+                        SpellValidTargets.EnemyMinions
+                    }
                 };
                 Spells.Add(spell);
             }
@@ -413,15 +423,19 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "LeBlanc")
             {
-                spell = new DashData("LeBlanc W1", SpellSlot.W, 600, false, 100, 1621, 3);
-                spell.CheckSpellName = "LeblancSlide";
+                spell = new DashData("LeBlanc W1", SpellSlot.W, 600, false, 100, 1621, 3)
+                {
+                    CheckSpellName = "LeblancSlide"
+                };
                 Spells.Add(spell);
             }
 
             if (ObjectManager.Player.ChampionName == "LeBlanc")
             {
-                spell = new DashData("LeBlanc RW", SpellSlot.R, 600, false, 100, 1621, 3);
-                spell.CheckSpellName = "LeblancSlideM";
+                spell = new DashData("LeBlanc RW", SpellSlot.R, 600, false, 100, 1621, 3)
+                {
+                    CheckSpellName = "LeblancSlideM"
+                };
                 Spells.Add(spell);
             }
 
@@ -431,10 +445,12 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "LeeSin")
             {
-                spell = new DashData("LeeSin W", SpellSlot.W, 700, false, 250, 2000, 3);
-                spell.ValidTargets = new[]
-                {SpellValidTargets.AllyChampions, SpellValidTargets.AllyMinions, SpellValidTargets.AllyWards};
-                spell.CheckSpellName = "BlindMonkWOne";
+                spell = new DashData("LeeSin W", SpellSlot.W, 700, false, 250, 2000, 3)
+                {
+                    ValidTargets = new[]
+                    {SpellValidTargets.AllyChampions, SpellValidTargets.AllyMinions, SpellValidTargets.AllyWards},
+                    CheckSpellName = "BlindMonkWOne"
+                };
                 Spells.Add(spell);
             }
 
@@ -454,8 +470,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Nidalee")
             {
-                spell = new DashData("Nidalee W", SpellSlot.W, 375, true, 250, 943, 3);
-                spell.CheckSpellName = "Pounce";
+                spell = new DashData("Nidalee W", SpellSlot.W, 375, true, 250, 943, 3) {CheckSpellName = "Pounce"};
                 Spells.Add(spell);
             }
 
@@ -465,8 +480,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Pantheon")
             {
-                spell = new DashData("Pantheon W", SpellSlot.W, 600, false, 100, 1000, 3);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new DashData("Pantheon W", SpellSlot.W, 600, false, 100, 1000, 3)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -476,8 +493,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Riven")
             {
-                spell = new DashData("Riven Q", SpellSlot.Q, 222, true, 250, 560, 3);
-                spell.RequiresPreMove = true;
+                spell = new DashData("Riven Q", SpellSlot.Q, 222, true, 250, 560, 3) {RequiresPreMove = true};
                 Spells.Add(spell);
 
                 spell = new DashData("Riven E", SpellSlot.E, 250, false, 250, 1200, 3);
@@ -520,8 +536,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "MonkeyKing")
             {
-                spell = new DashData("Wukong E", SpellSlot.E, 650, false, 100, 1400, 3);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new DashData("Wukong E", SpellSlot.E, 650, false, 100, 1400, 3)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -555,11 +573,13 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Katarina")
             {
-                spell = new BlinkData("Katarina E", SpellSlot.E, 700, 200, 3);
-                spell.ValidTargets = new[]
+                spell = new BlinkData("Katarina E", SpellSlot.E, 700, 200, 3)
                 {
-                    SpellValidTargets.AllyChampions, SpellValidTargets.AllyMinions, SpellValidTargets.AllyWards,
-                    SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions, SpellValidTargets.EnemyWards
+                    ValidTargets = new[]
+                    {
+                        SpellValidTargets.AllyChampions, SpellValidTargets.AllyMinions, SpellValidTargets.AllyWards,
+                        SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions, SpellValidTargets.EnemyWards
+                    }
                 };
                 Spells.Add(spell);
             }
@@ -580,8 +600,10 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Talon")
             {
-                spell = new BlinkData("Talon E", SpellSlot.E, 700, 100, 3);
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new BlinkData("Talon E", SpellSlot.E, 700, 100, 3)
+                {
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -595,9 +617,11 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Elise")
             {
-                spell = new InvulnerabilityData("Elise E", SpellSlot.E, 250, 3);
-                spell.CheckSpellName = "EliseSpiderEInitial";
-                spell.SelfCast = true;
+                spell = new InvulnerabilityData("Elise E", SpellSlot.E, 250, 3)
+                {
+                    CheckSpellName = "EliseSpiderEInitial",
+                    SelfCast = true
+                };
                 Spells.Add(spell);
             }
 
@@ -607,8 +631,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Vladimir")
             {
-                spell = new InvulnerabilityData("Vladimir W", SpellSlot.W, 250, 3);
-                spell.SelfCast = true;
+                spell = new InvulnerabilityData("Vladimir W", SpellSlot.W, 250, 3) {SelfCast = true};
                 Spells.Add(spell);
             }
 
@@ -628,9 +651,11 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "MasterYi")
             {
-                spell = new InvulnerabilityData("MasterYi Q", SpellSlot.Q, 250, 3);
-                spell.MaxRange = 600;
-                spell.ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions};
+                spell = new InvulnerabilityData("MasterYi Q", SpellSlot.Q, 250, 3)
+                {
+                    MaxRange = 600,
+                    ValidTargets = new[] {SpellValidTargets.EnemyChampions, SpellValidTargets.EnemyMinions}
+                };
                 Spells.Add(spell);
             }
 
@@ -638,14 +663,14 @@ namespace MasterSharp
 
             #endregion
 
-            //Flash
+            // Flash.
             if (ObjectManager.Player.GetSpellSlot("SummonerFlash") != SpellSlot.Unknown)
             {
                 spell = new BlinkData("Flash", ObjectManager.Player.GetSpellSlot("SummonerFlash"), 400, 100, 5, true);
                 Spells.Add(spell);
             }
 
-            //Zhonyas
+            // Zhonyas.
             spell = new EvadeSpellData("Zhonyas", 5);
             Spells.Add(spell);
 
@@ -707,9 +732,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Karma")
             {
-                spell = new ShieldData("Karma E", SpellSlot.E, 100, 2);
-                spell.CanShieldAllies = true;
-                spell.MaxRange = 800;
+                spell = new ShieldData("Karma E", SpellSlot.E, 100, 2) {CanShieldAllies = true, MaxRange = 800};
                 Spells.Add(spell);
             }
 
@@ -719,9 +742,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Janna")
             {
-                spell = new ShieldData("Janna E", SpellSlot.E, 100, 1);
-                spell.CanShieldAllies = true;
-                spell.MaxRange = 800;
+                spell = new ShieldData("Janna E", SpellSlot.E, 100, 1) {CanShieldAllies = true, MaxRange = 800};
                 Spells.Add(spell);
             }
 
@@ -731,9 +752,7 @@ namespace MasterSharp
 
             if (ObjectManager.Player.ChampionName == "Morgana")
             {
-                spell = new ShieldData("Morgana E", SpellSlot.E, 100, 3);
-                spell.CanShieldAllies = true;
-                spell.MaxRange = 750;
+                spell = new ShieldData("Morgana E", SpellSlot.E, 100, 3) {CanShieldAllies = true, MaxRange = 750};
                 Spells.Add(spell);
             }
 
@@ -742,18 +761,10 @@ namespace MasterSharp
             #endregion
         }
 
-        public static EvadeSpellData GetByName(string Name)
+        public static EvadeSpellData GetByName(string name)
         {
-            Name = Name.ToLower();
-            foreach (var evadeSpellData in Spells)
-            {
-                if (evadeSpellData.Name.ToLower() == Name)
-                {
-                    return evadeSpellData;
-                }
-            }
-
-            return null;
+            name = name.ToLower();
+            return Spells.FirstOrDefault(evadeSpellData => evadeSpellData.Name.ToLower() == name);
         }
     }
 }
